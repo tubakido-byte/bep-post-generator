@@ -137,14 +137,22 @@ def get_news_articles(source: str) -> list:
 
         needs_translation = '産経新聞' not in source
         if needs_translation and raw:
-            def translate_with_retry(title):
-                result = translate_text(title)
-                if result == title:  # translation failed, retry once
-                    result = translate_text(title)
-                return result
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                translated = list(executor.map(translate_with_retry, [a['title'] for a in raw]))
-            return [{"title": t, "summary": '', "link": a['link']} for t, a in zip(translated, raw)]
+            titles = [a['title'] for a in raw]
+            numbered = "\n".join([f"{i+1}. {t}" for i, t in enumerate(titles)])
+            prompt = f"次の英語タイトルを日本語に翻訳してください。番号付きリストのみ出力。\n{numbered}"
+            translated_titles = titles[:]
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+                resp2 = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]},
+                                      headers={"Content-Type": "application/json"}, timeout=20)
+                if resp2.status_code == 200:
+                    lines = resp2.json()['candidates'][0]['content']['parts'][0]['text'].strip().split('\n')
+                    parsed = [l.split('. ', 1)[-1].strip() for l in lines if l.strip() and l.strip()[0].isdigit()]
+                    if len(parsed) == len(titles):
+                        translated_titles = parsed
+            except Exception as e:
+                print(f"[DEBUG] Batch translate error: {e}")
+            return [{"title": t, "summary": '', "link": a['link']} for t, a in zip(translated_titles, raw)]
 
         return [{"title": a['title'], "summary": '', "link": a['link']} for a in raw] if raw else \
                [{"title": "記事なし", "summary": "RSS に記事が見つかりません", "link": "#"}]
