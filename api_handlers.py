@@ -42,55 +42,32 @@ def post_to_x(text: str) -> dict:
         print(f"[DEBUG] Exception: {type(e).__name__}: {error_msg}")
         return {"success": False, "error": error_msg}
 
+def _call_gemini(prompt: str) -> str:
+    """Single Gemini API call, returns text"""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+    response = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=30)
+    if response.status_code == 200:
+        result = response.json()
+        return result['candidates'][0]['content']['parts'][0]['text'].strip()
+    return ""
+
 def generate_posts(topic: str) -> list:
-    """Generate 3 patterns using Gemini API with JSON output"""
-    prompt = f"""以下のテキストを元に、X（Twitter）投稿用の文章を3パターン作成してください。
-
-元のテキスト：
-{topic}
-
-ルール：
-- pattern1：感情・共感を前面に出した文体（280文字以内）
-- pattern2：客観的な事実と分析の文体（280文字以内）
-- pattern3：問いかけ・対話を促す文体（280文字以内）
-- 各パターンは全く異なる表現で書く"""
-
-    try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-        headers = {"Content-Type": "application/json"}
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "response_mime_type": "application/json",
-                "response_schema": {
-                    "type": "object",
-                    "properties": {
-                        "pattern1": {"type": "string"},
-                        "pattern2": {"type": "string"},
-                        "pattern3": {"type": "string"}
-                    },
-                    "required": ["pattern1", "pattern2", "pattern3"]
-                }
-            }
-        }
-        response = requests.post(url, json=payload, headers=headers, timeout=60)
-        if response.status_code == 200:
-            result = response.json()
-            if 'candidates' in result:
-                import json
-                text = result['candidates'][0]['content']['parts'][0]['text']
-                data = json.loads(text)
-                patterns = [
-                    data.get('pattern1', ''),
-                    data.get('pattern2', ''),
-                    data.get('pattern3', '')
-                ]
-                patterns = [p[:280] for p in patterns if p and len(p) > 5]
-                if len(patterns) >= 1:
-                    return patterns
-    except Exception as e:
-        print(f"[DEBUG] Generate error: {str(e)}")
-    return [topic]
+    """Generate 3 patterns via 3 separate Gemini calls"""
+    prompts = [
+        f"X（Twitter）投稿を1つだけ書いてください。感情・共感を前面に出した文体。280文字以内。説明不要、投稿文のみ出力。\n元のテキスト：{topic}",
+        f"X（Twitter）投稿を1つだけ書いてください。客観的な事実と分析の文体。280文字以内。説明不要、投稿文のみ出力。\n元のテキスト：{topic}",
+        f"X（Twitter）投稿を1つだけ書いてください。読者への問いかけ・対話を促す文体。280文字以内。説明不要、投稿文のみ出力。\n元のテキスト：{topic}",
+    ]
+    patterns = []
+    for prompt in prompts:
+        try:
+            text = _call_gemini(prompt)
+            if text and len(text) > 5:
+                patterns.append(text[:280])
+        except Exception as e:
+            print(f"[DEBUG] Generate error: {str(e)}")
+    return patterns if patterns else [topic]
 
 def translate_text(text: str) -> str:
     """Translate text to Japanese"""
