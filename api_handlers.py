@@ -130,10 +130,20 @@ def get_news_articles(source: str) -> list:
             link = (link_el.text or link_el.get('href', '#') or '#').strip() if link_el is not None else '#'
             raw.append({"title": title, "link": link})
 
+        # Google News titles have "- Source Name" suffix → remove it
+        for a in raw:
+            if ' - ' in a['title']:
+                a['title'] = a['title'].rsplit(' - ', 1)[0].strip()
+
         needs_translation = '産経新聞' not in source
         if needs_translation and raw:
+            def translate_with_retry(title):
+                result = translate_text(title)
+                if result == title:  # translation failed, retry once
+                    result = translate_text(title)
+                return result
             with ThreadPoolExecutor(max_workers=5) as executor:
-                translated = list(executor.map(lambda a: translate_text(a['title']), raw))
+                translated = list(executor.map(translate_with_retry, [a['title'] for a in raw]))
             return [{"title": t, "summary": '', "link": a['link']} for t, a in zip(translated, raw)]
 
         return [{"title": a['title'], "summary": '', "link": a['link']} for a in raw] if raw else \
