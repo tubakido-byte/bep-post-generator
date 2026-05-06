@@ -1,0 +1,21 @@
+# 秘密情報（絶対にコミットしない）
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

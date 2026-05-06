@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEP Post Generator</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダータブ -->
+        <div class="header">
+            <button class="tab active" onclick="switchTab('short')">
+                💬 短文投稿
+            </button>
+            <button class="tab" onclick="switchTab('news')">
+                📰 ニュース投稿
+            </button>
+        </div>
+
+        <!-- 短文投稿セクション -->
+        <div id="short-section" class="section active">
+            <div class="section-title">短文投稿</div>
+            <div class="form-group">
+                <label>あなたの投稿内容</label>
+                <textarea id="short-text" placeholder="投稿したいテキストを入力してください（最大280文字）" rows="6"></textarea>
+                <div class="char-count"><span id="short-count">0</span> / 280文字</div>
+            </div>
+            <button onclick="postShort()">📤 投稿する</button>
+            <button class="secondary" onclick="generateShort()">🤖 AI生成</button>
+            <div id="short-loading" class="loading-message">⏳ 1分～2分程お待ちください...</div>
+            <div id="short-result" class="result"></div>
+
+            <!-- 生成されたパターン表示 -->
+            <div id="short-patterns" style="margin-top: 30px; display: none;">
+                <div class="section-title" style="font-size: 18px; margin-bottom: 15px;">生成されたパターン</div>
+                <div id="short-patterns-list" style="display: grid; grid-template-columns: 1fr; gap: 15px;"></div>
+            </div>
+        </div>
+
+        <!-- ニュース投稿セクション -->
+        <div id="news-section" class="section">
+            <div class="section-title">ニュース投稿</div>
+
+            <!-- ニュース選択 -->
+            <div>
+                <div class="section-title" style="font-size: 18px; margin-bottom: 15px;">ニュース選択</div>
+                <div class="form-group">
+                    <label>ニュースソースを選択</label>
+                    <select id="news-source">
+                        <option value="🌍 Axios">🌍 Axios</option>
+                        <option value="🏛️ 産経新聞">🏛️ 産経新聞</option>
+                        <option value="🚀 Fox News">🚀 Fox News</option>
+                    </select>
+                </div>
+                <button onclick="loadNews()">📰 ニュース取得</button>
+                <div id="news-fetch-loading" class="loading-message">⏳ 1分程お待ちください...</div>
+            </div>
+
+            <!-- 記事選択 -->
+            <div style="margin-top: 40px;">
+                <div class="section-title" style="font-size: 18px; margin-bottom: 15px;">記事を選択</div>
+                <div id="article-list" class="article-list"></div>
+            </div>
+
+            <!-- 意見入力 -->
+            <div id="opinion-section" style="display: none; margin-top: 40px;">
+                <div class="section-title" style="font-size: 18px; margin-bottom: 15px;">あなたの意見</div>
+                <div class="form-group">
+                    <label id="opinion-label">意見を入力</label>
+                    <textarea id="opinion-text" placeholder="この記事についてのあなたの考えを入力してください（最大280文字）" rows="4"></textarea>
+                    <div class="char-count"><span id="opinion-count">0</span> / 280文字</div>
+                </div>
+                <button onclick="postNews()">📤 投稿する</button>
+                <button class="secondary" onclick="generateNews()">🤖 AI生成</button>
+                <div id="news-loading" class="loading-message">⏳ 1分～2分程お待ちください...</div>
+            </div>
+
+            <div id="news-result" class="result"></div>
+
+            <!-- 生成されたパターン表示 -->
+            <div id="news-patterns" style="margin-top: 30px; display: none;">
+                <div class="section-title" style="font-size: 18px; margin-bottom: 15px;">生成されたパターン</div>
+                <div id="news-patterns-list" style="display: grid; grid-template-columns: 1fr; gap: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
