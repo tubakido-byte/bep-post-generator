@@ -3,44 +3,32 @@
 """API Handler Functions"""
 
 import requests
-from config import X_OAUTH2_ACCESS_TOKEN, X_API_ENDPOINT, GEMINI_API_KEY, NEWS_SOURCES
+import tweepy
+from config import X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, GEMINI_API_KEY, NEWS_SOURCES
 
 def post_to_x(text: str) -> dict:
-    """Post text to X"""
+    """Post text to X using OAuth 1.0a (no expiration)"""
     if not text or len(text) == 0:
         return {"success": False, "error": "テキストが空です"}
 
     if len(text) > 280:
         text = text[:276] + "..."
 
-    headers = {
-        "Authorization": f"Bearer {X_OAUTH2_ACCESS_TOKEN}",
-        "Content-Type": "application/json"
-    }
-
     try:
-        print(f"[DEBUG] Posting text: {text[:80]}...")
-        response = requests.post(
-            X_API_ENDPOINT,
-            headers=headers,
-            json={"text": text},
-            timeout=30
+        client = tweepy.Client(
+            consumer_key=X_CONSUMER_KEY,
+            consumer_secret=X_CONSUMER_SECRET,
+            access_token=X_ACCESS_TOKEN,
+            access_token_secret=X_ACCESS_TOKEN_SECRET
         )
-
-        print(f"[DEBUG] Response status: {response.status_code}")
-        if response.status_code == 201:
-            result = response.json()
-            tweet_id = result.get('data', {}).get('id', '')
-            print(f"[DEBUG] Success! Tweet ID: {tweet_id}")
-            return {"success": True, "tweet_id": tweet_id}
-        else:
-            error_msg = response.json().get('detail', response.text) if response.text else f"HTTP {response.status_code}"
-            print(f"[DEBUG] Error: {error_msg}")
-            return {"success": False, "error": f"HTTP {response.status_code}: {error_msg}"}
+        print(f"[DEBUG] Posting: {text[:80]}...")
+        response = client.create_tweet(text=text)
+        tweet_id = response.data['id']
+        print(f"[DEBUG] Success! Tweet ID: {tweet_id}")
+        return {"success": True, "tweet_id": tweet_id}
     except Exception as e:
-        error_msg = str(e)
-        print(f"[DEBUG] Exception: {type(e).__name__}: {error_msg}")
-        return {"success": False, "error": error_msg}
+        print(f"[DEBUG] Post error: {type(e).__name__}: {e}")
+        return {"success": False, "error": str(e)}
 
 from concurrent.futures import ThreadPoolExecutor
 
