@@ -46,7 +46,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 def _call_gemini(prompt: str) -> str:
     """Single Gemini API call, returns text"""
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     try:
         response = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=25)
@@ -93,7 +93,7 @@ def translate_text(text: str) -> str:
         text_short = text[:80]
         prompt = f"Translate to Japanese only: {text_short}"
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
         response = requests.post(
             url,
             json={"contents": [{"parts": [{"text": prompt}]}]},
