@@ -3,7 +3,7 @@
 """API Handler Functions"""
 
 import requests
-import tweepy
+from requests_oauthlib import OAuth1
 from config import X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, GEMINI_API_KEY, NEWS_SOURCES
 
 def post_to_x(text: str) -> dict:
@@ -15,17 +15,22 @@ def post_to_x(text: str) -> dict:
         text = text[:276] + "..."
 
     try:
-        client = tweepy.Client(
-            consumer_key=X_CONSUMER_KEY,
-            consumer_secret=X_CONSUMER_SECRET,
-            access_token=X_ACCESS_TOKEN,
-            access_token_secret=X_ACCESS_TOKEN_SECRET
-        )
+        auth = OAuth1(X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET)
         print(f"[DEBUG] Posting: {text[:80]}...")
-        response = client.create_tweet(text=text)
-        tweet_id = response.data['id']
-        print(f"[DEBUG] Success! Tweet ID: {tweet_id}")
-        return {"success": True, "tweet_id": tweet_id}
+        response = requests.post(
+            "https://api.twitter.com/2/tweets",
+            json={"text": text},
+            auth=auth,
+            timeout=30
+        )
+        print(f"[DEBUG] X API status: {response.status_code}")
+        if response.status_code == 201:
+            tweet_id = response.json()['data']['id']
+            print(f"[DEBUG] Success! Tweet ID: {tweet_id}")
+            return {"success": True, "tweet_id": tweet_id}
+        else:
+            print(f"[DEBUG] X API error: {response.text[:200]}")
+            return {"success": False, "error": response.text[:200]}
     except Exception as e:
         print(f"[DEBUG] Post error: {type(e).__name__}: {e}")
         return {"success": False, "error": str(e)}
