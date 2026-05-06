@@ -43,49 +43,51 @@ def post_to_x(text: str) -> dict:
         return {"success": False, "error": error_msg}
 
 def generate_posts(topic: str) -> list:
-    """Generate 3 patterns using Gemini API"""
+    """Generate 3 patterns using Gemini API with JSON output"""
     prompt = f"""以下のテキストを元に、X（Twitter）投稿用の文章を3パターン作成してください。
 
 元のテキスト：
 {topic}
 
-必ず以下の形式で出力してください：
-
-===パターン1===
-（ここに280文字以内の投稿文）
-
-===パターン2===
-（ここに280文字以内の投稿文）
-
-===パターン3===
-（ここに280文字以内の投稿文）
-
-各パターンのルール：
-- パターン1：感情・共感を前面に出した文体
-- パターン2：客観的な事実と分析の文体
-- パターン3：問いかけ・対話を促す文体
-- 各パターンは全く異なる表現で書く
-- 各パターンは280文字以内"""
+ルール：
+- pattern1：感情・共感を前面に出した文体（280文字以内）
+- pattern2：客観的な事実と分析の文体（280文字以内）
+- pattern3：問いかけ・対話を促す文体（280文字以内）
+- 各パターンは全く異なる表現で書く"""
 
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
         headers = {"Content-Type": "application/json"}
-        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "response_mime_type": "application/json",
+                "response_schema": {
+                    "type": "object",
+                    "properties": {
+                        "pattern1": {"type": "string"},
+                        "pattern2": {"type": "string"},
+                        "pattern3": {"type": "string"}
+                    },
+                    "required": ["pattern1", "pattern2", "pattern3"]
+                }
+            }
+        }
         response = requests.post(url, json=payload, headers=headers, timeout=60)
-
         if response.status_code == 200:
             result = response.json()
             if 'candidates' in result:
+                import json
                 text = result['candidates'][0]['content']['parts'][0]['text']
-                patterns = []
-                import re
-                blocks = re.split(r'===パターン\d+===', text)
-                for block in blocks[1:]:
-                    cleaned = block.strip()
-                    if cleaned and len(cleaned) > 5:
-                        patterns.append(cleaned[:280])
+                data = json.loads(text)
+                patterns = [
+                    data.get('pattern1', ''),
+                    data.get('pattern2', ''),
+                    data.get('pattern3', '')
+                ]
+                patterns = [p[:280] for p in patterns if p and len(p) > 5]
                 if len(patterns) >= 1:
-                    return patterns[:3]
+                    return patterns
     except Exception as e:
         print(f"[DEBUG] Generate error: {str(e)}")
     return [topic]
