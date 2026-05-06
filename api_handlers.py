@@ -91,7 +91,7 @@ def translate_text(text: str) -> str:
             url,
             json={"contents": [{"parts": [{"text": prompt}]}]},
             headers={"Content-Type": "application/json"},
-            timeout=25
+            timeout=10
         )
 
         if response.status_code == 200:
@@ -122,21 +122,22 @@ def get_news_articles(source: str) -> list:
         items = root.findall('.//item')
         print(f"[DEBUG] Found {len(items)} items")
 
-        articles = []
-        needs_translation = '産経新聞' not in source
-
+        raw = []
         for item in items[:5]:
             title_el = item.find('title')
             title = (title_el.text or '').strip() if title_el is not None else 'No title'
             link_el = item.find('link')
-            link = (link_el.text or '#').strip() if link_el is not None else '#'
+            link = (link_el.text or link_el.get('href', '#') or '#').strip() if link_el is not None else '#'
+            raw.append({"title": title, "link": link})
 
-            if needs_translation and title:
-                title = translate_text(title)
+        needs_translation = '産経新聞' not in source
+        if needs_translation and raw:
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                translated = list(executor.map(lambda a: translate_text(a['title']), raw))
+            return [{"title": t, "summary": '', "link": a['link']} for t, a in zip(translated, raw)]
 
-            articles.append({"title": title, "summary": '', "link": link})
-
-        return articles if articles else [{"title": "記事なし", "summary": "RSS に記事が見つかりません", "link": "#"}]
+        return [{"title": a['title'], "summary": '', "link": a['link']} for a in raw] if raw else \
+               [{"title": "記事なし", "summary": "RSS に記事が見つかりません", "link": "#"}]
 
     except Exception as e:
         print(f"[DEBUG] News error: {type(e).__name__}: {e}")
