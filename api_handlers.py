@@ -43,73 +43,51 @@ def post_to_x(text: str) -> dict:
         return {"success": False, "error": error_msg}
 
 def generate_posts(topic: str) -> list:
-    """Generate 3 patterns using Gemini API (staged approach)"""
-    prompt = f"""## タスク：テキストの要素抽出と再構成
+    """Generate 3 patterns using Gemini API"""
+    prompt = f"""以下のテキストを元に、X（Twitter）投稿用の文章を3パターン作成してください。
 
-以下のテキストを読んでください：
-【元のテキスト】
+元のテキスト：
 {topic}
 
-## ステップ1：重要な要素を抽出してください
-- 主な事実は何か
-- 主張・意見は何か
-- データ・証拠は何か
+必ず以下の形式で出力してください：
 
-## ステップ2：3つの異なる「角度」から書き直してください
+===パターン1===
+（ここに280文字以内の投稿文）
 
-【パターン①】強い意見・主張を前面に：中心的な主張を強調
-→ 元のテキストと全く異なる言葉で、意見を強調するアプローチで書く
+===パターン2===
+（ここに280文字以内の投稿文）
 
-【パターン②】バランス・多角的視点：複数の視点を含める
-→ 元のテキストと全く異なる言葉で、複数の視点を含めて書く
+===パターン3===
+（ここに280文字以内の投稿文）
 
-【パターン③】事実と分析：冷徹に何が起きているかを述べる
-→ 元のテキストと全く異なる言葉で、客観的アプローチで書く
-
-## 出力ルール
-- 各投稿は280文字以内
-- 元のテキストの言い回しは使わない
-- 同じ意味だが、全く異なる表現で書く
-- 各パターンは独立した投稿として機能する
-
-## 出力フォーマット
-【パターン①】[ここに生成テキストを挿入]
-【パターン②】[ここに生成テキストを挿入]
-【パターン③】[ここに生成テキストを挿入]"""
+各パターンのルール：
+- パターン1：感情・共感を前面に出した文体
+- パターン2：客観的な事実と分析の文体
+- パターン3：問いかけ・対話を促す文体
+- 各パターンは全く異なる表現で書く
+- 各パターンは280文字以内"""
 
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
         headers = {"Content-Type": "application/json"}
-        payload = {
-            "contents": [{
-                "parts": [{
-                    "text": prompt
-                }]
-            }]
-        }
-        response = requests.post(url, json=payload, headers=headers, timeout=30)
+        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        response = requests.post(url, json=payload, headers=headers, timeout=60)
+
         if response.status_code == 200:
             result = response.json()
             if 'candidates' in result:
                 text = result['candidates'][0]['content']['parts'][0]['text']
                 patterns = []
-                markers = ["【パターン①】", "【パターン②】", "【パターン③】"]
-                for marker in markers:
-                    if marker in text:
-                        start = text.find(marker) + len(marker)
-                        next_marker_pos = -1
-                        for next_m in markers:
-                            pos = text.find(next_m, start)
-                            if pos > -1 and (next_marker_pos == -1 or pos < next_marker_pos):
-                                next_marker_pos = pos
-                        end = next_marker_pos if next_marker_pos > -1 else len(text)
-                        pattern_text = text[start:end].strip()
-                        if pattern_text and len(pattern_text) > 5:
-                            patterns.append(pattern_text)
-                return patterns if len(patterns) > 0 else [topic]
+                import re
+                blocks = re.split(r'===パターン\d+===', text)
+                for block in blocks[1:]:
+                    cleaned = block.strip()
+                    if cleaned and len(cleaned) > 5:
+                        patterns.append(cleaned[:280])
+                if len(patterns) >= 1:
+                    return patterns[:3]
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        print(f"[DEBUG] Generate error: {str(e)}")
     return [topic]
 
 def translate_text(text: str) -> str:
