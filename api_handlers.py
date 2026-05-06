@@ -109,8 +109,15 @@ def get_news_articles(source: str) -> list:
     try:
         import feedparser
         feed_url = NEWS_SOURCES.get(source, list(NEWS_SOURCES.values())[0])
-        feedparser.USER_AGENT = "Mozilla/5.0 (compatible; BEPGenerator/1.0)"
-        feed = feedparser.parse(feed_url)
+        print(f"[DEBUG] Fetching RSS: {feed_url}")
+        resp = requests.get(
+            feed_url,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; BEPGenerator/1.0)"},
+            timeout=10
+        )
+        print(f"[DEBUG] RSS status: {resp.status_code}")
+        feed = feedparser.parse(resp.content)
+        print(f"[DEBUG] RSS entries: {len(feed.entries)}")
         articles = []
 
         needs_translation = '産経新聞' not in source
@@ -130,5 +137,5 @@ def get_news_articles(source: str) -> list:
 
         return articles
     except Exception as e:
-        print(f"[DEBUG] News fetch error: {str(e)}")
+        print(f"[DEBUG] News fetch error: {type(e).__name__}: {str(e)}")
         return [{"title": "テスト記事", "summary": "ニュース取得に失敗しました", "link": "#"}]
