@@ -107,35 +107,37 @@ def translate_text(text: str) -> str:
 def get_news_articles(source: str) -> list:
     """Fetch news articles from RSS feed"""
     try:
-        import feedparser
+        import xml.etree.ElementTree as ET
         feed_url = NEWS_SOURCES.get(source, list(NEWS_SOURCES.values())[0])
-        print(f"[DEBUG] Fetching RSS: {feed_url}")
+        print(f"[DEBUG] Fetching: {feed_url}")
+
         resp = requests.get(
             feed_url,
-            headers={"User-Agent": "Mozilla/5.0 (compatible; BEPGenerator/1.0)"},
-            timeout=10
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+            timeout=15
         )
-        print(f"[DEBUG] RSS status: {resp.status_code}")
-        feed = feedparser.parse(resp.content)
-        print(f"[DEBUG] RSS entries: {len(feed.entries)}")
-        articles = []
+        print(f"[DEBUG] HTTP {resp.status_code}, {len(resp.content)} bytes")
 
+        root = ET.fromstring(resp.content)
+        items = root.findall('.//item')
+        print(f"[DEBUG] Found {len(items)} items")
+
+        articles = []
         needs_translation = '産経新聞' not in source
 
-        for entry in feed.entries[:5]:
-            title = entry.get('title', 'No title')
-            summary = entry.get('summary', '')[:150]
+        for item in items[:5]:
+            title_el = item.find('title')
+            title = (title_el.text or '').strip() if title_el is not None else 'No title'
+            link_el = item.find('link')
+            link = (link_el.text or '#').strip() if link_el is not None else '#'
 
-            if needs_translation:
+            if needs_translation and title:
                 title = translate_text(title)
 
-            articles.append({
-                "title": title,
-                "summary": summary,
-                "link": entry.get('link', '#')
-            })
+            articles.append({"title": title, "summary": '', "link": link})
 
-        return articles
+        return articles if articles else [{"title": "記事なし", "summary": "RSS に記事が見つかりません", "link": "#"}]
+
     except Exception as e:
-        print(f"[DEBUG] News fetch error: {type(e).__name__}: {str(e)}")
+        print(f"[DEBUG] News error: {type(e).__name__}: {e}")
         return [{"title": "テスト記事", "summary": "ニュース取得に失敗しました", "link": "#"}]
