@@ -8,6 +8,6 @@ GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
 NEWS_SOURCES = {
     "🏛️ 産経新聞": "https://www3.nhk.or.jp/rss/news/cat0.xml",
-    "🌍 Axios": "http://feeds.bbci.co.uk/news/rss.xml",
-    "🚀 Fox News": "https://techcrunch.com/feed/"
+    "🌍 Axios": "https://news.google.com/rss/search?q=site:axios.com&hl=en&gl=US&ceid=US:en",
+    "🚀 Fox News": "https://news.google.com/rss/search?q=site:foxnews.com&hl=en&gl=US&ceid=US:en"
 }
