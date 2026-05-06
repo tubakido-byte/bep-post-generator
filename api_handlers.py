@@ -113,7 +113,7 @@ def get_news_articles(source: str) -> list:
         feed = feedparser.parse(feed_url)
         articles = []
 
-        needs_translation = 'NHK' not in source
+        needs_translation = '産経新聞' not in source
 
         for entry in feed.entries[:5]:
             title = entry.get('title', 'No title')
