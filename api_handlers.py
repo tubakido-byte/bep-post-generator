@@ -42,32 +42,47 @@ def post_to_x(text: str) -> dict:
         print(f"[DEBUG] Exception: {type(e).__name__}: {error_msg}")
         return {"success": False, "error": error_msg}
 
+from concurrent.futures import ThreadPoolExecutor
+
 def _call_gemini(prompt: str) -> str:
     """Single Gemini API call, returns text"""
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
-    response = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=30)
-    if response.status_code == 200:
-        result = response.json()
-        return result['candidates'][0]['content']['parts'][0]['text'].strip()
+    try:
+        response = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=25)
+        print(f"[DEBUG] Gemini status: {response.status_code}")
+        if response.status_code == 200:
+            result = response.json()
+            text = result['candidates'][0]['content']['parts'][0]['text'].strip()
+            print(f"[DEBUG] Gemini text: {text[:100]}")
+            return text
+        else:
+            print(f"[DEBUG] Gemini error body: {response.text[:300]}")
+    except Exception as e:
+        print(f"[DEBUG] Gemini exception: {type(e).__name__}: {e}")
     return ""
 
 def generate_posts(topic: str) -> list:
-    """Generate 3 patterns via 3 separate Gemini calls"""
+    """Generate 3 patterns via parallel Gemini calls"""
     prompts = [
         f"X（Twitter）投稿を1つだけ書いてください。感情・共感を前面に出した文体。280文字以内。説明不要、投稿文のみ出力。\n元のテキスト：{topic}",
         f"X（Twitter）投稿を1つだけ書いてください。客観的な事実と分析の文体。280文字以内。説明不要、投稿文のみ出力。\n元のテキスト：{topic}",
         f"X（Twitter）投稿を1つだけ書いてください。読者への問いかけ・対話を促す文体。280文字以内。説明不要、投稿文のみ出力。\n元のテキスト：{topic}",
     ]
-    patterns = []
-    for prompt in prompts:
-        try:
-            text = _call_gemini(prompt)
-            if text and len(text) > 5:
-                patterns.append(text[:280])
-        except Exception as e:
-            print(f"[DEBUG] Generate error: {str(e)}")
-    return patterns if patterns else [topic]
+    patterns = [None, None, None]
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {executor.submit(_call_gemini, p): i for i, p in enumerate(prompts)}
+        for future in futures:
+            idx = futures[future]
+            try:
+                text = future.result()
+                if text and len(text) > 5:
+                    patterns[idx] = text[:280]
+            except Exception as e:
+                print(f"[DEBUG] Future error: {e}")
+    result = [p for p in patterns if p]
+    print(f"[DEBUG] Total patterns: {len(result)}")
+    return result if result else [topic]
 
 def translate_text(text: str) -> str:
     """Translate text to Japanese"""
@@ -78,12 +93,12 @@ def translate_text(text: str) -> str:
         text_short = text[:80]
         prompt = f"Translate to Japanese only: {text_short}"
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
         response = requests.post(
             url,
             json={"contents": [{"parts": [{"text": prompt}]}]},
             headers={"Content-Type": "application/json"},
-            timeout=30
+            timeout=25
         )
 
         if response.status_code == 200:
