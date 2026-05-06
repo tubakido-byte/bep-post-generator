@@ -144,10 +144,11 @@ def get_news_articles(source: str) -> list:
     try:
         import feedparser
         feed_url = NEWS_SOURCES.get(source, list(NEWS_SOURCES.values())[0])
+        feedparser.USER_AGENT = "Mozilla/5.0 (compatible; BEPGenerator/1.0)"
         feed = feedparser.parse(feed_url)
         articles = []
 
-        needs_translation = '産経新聞' not in source
+        needs_translation = 'NHK' not in source
 
         for entry in feed.entries[:5]:
             title = entry.get('title', 'No title')
