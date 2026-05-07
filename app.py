@@ -28,6 +28,12 @@ def api_generate():
 def api_generate_images():
     return jsonify({'images': generate_images(request.get_json().get('prompt', ''))})
 
+@app.route('/api/list-models')
+def list_models():
+    r = requests.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={GEMINI_API_KEY}", timeout=15)
+    names = [m['name'] for m in r.json().get('models', []) if 'generateContent' in m.get('supportedGenerationMethods', [])]
+    return jsonify({"models": names})
+
 @app.route('/api/debug-image')
 def debug_image():
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={GEMINI_API_KEY}"
