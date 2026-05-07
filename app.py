@@ -30,7 +30,7 @@ def api_generate_images():
 
 @app.route('/api/debug-image')
 def debug_image():
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={GEMINI_API_KEY}"
     payload = {"contents": [{"parts": [{"text": "a beautiful sunset over mountains"}]}], "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]}}
     try:
         r = requests.post(url, json=payload, timeout=60)
