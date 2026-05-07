@@ -20,7 +20,8 @@ def api_post():
 
 @app.route('/api/generate', methods=['POST'])
 def api_generate():
-    return jsonify({'posts': generate_posts(request.get_json().get('topic', 'X投稿'))})
+    result = generate_posts(request.get_json().get('topic', 'X投稿'))
+    return jsonify(result)
 
 @app.route('/api/generate-images', methods=['POST'])
 def api_generate_images():

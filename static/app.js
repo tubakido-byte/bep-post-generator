@@ -69,24 +69,27 @@ function generatePatterns(section) {
             btn.textContent = '🤖 AI生成';
             document.getElementById(`${section}-loading`).classList.remove('show');
 
-            if (!data.posts?.length) return;
-            textarea.value = data.posts[0];
-            counter.textContent = data.posts[0].length;
+            const prompts = data.prompts || [];
+            const labels = data.labels || prompts;
+            if (!prompts.length) return;
+
+            textarea.value = labels[0];
+            counter.textContent = labels[0].length;
 
             const list = document.getElementById(`${section}-patterns-list`);
             list.innerHTML = '';
-            data.posts.forEach((post, idx) => {
+            prompts.forEach((prompt, idx) => {
                 const div = document.createElement('div');
                 div.style.cssText = `padding: 15px; background: ${idx === 0 ? '#667eea' : '#2a2a2a'}; border: 2px solid ${idx === 0 ? '#667eea' : '#444'}; border-radius: 6px; cursor: pointer;`;
-                div.innerHTML = `<div style="font-weight:600;color:#fff;margin-bottom:8px;">【パターン${idx + 1}】</div><div style="color:#fff;line-height:1.5;">${post}</div>`;
+                div.innerHTML = `<div style="font-weight:600;color:#fff;margin-bottom:8px;">【パターン${idx + 1}】</div><div style="color:#fff;line-height:1.5;">${labels[idx]}</div>`;
                 div.onclick = () => {
                     list.querySelectorAll('div').forEach((el, i) => {
                         el.style.background = i === idx ? '#667eea' : '#2a2a2a';
                         el.style.borderColor = i === idx ? '#667eea' : '#444';
                     });
-                    textarea.value = post;
-                    counter.textContent = post.length;
-                    selectedPrompt[section] = post;
+                    textarea.value = labels[idx];
+                    counter.textContent = labels[idx].length;
+                    selectedPrompt[section] = prompt;
                     document.getElementById(`${section}-image-btn`).style.display = 'inline-block';
                     document.getElementById(`${section}-image-section`).style.display = 'none';
                     showResult(`${section}-result`, `✓ パターン${idx + 1}を選択しました`, 'success');
@@ -94,7 +97,7 @@ function generatePatterns(section) {
                 list.appendChild(div);
             });
 
-            selectedPrompt[section] = data.posts[0];
+            selectedPrompt[section] = prompts[0];
             document.getElementById(`${section}-patterns`).style.display = 'block';
             document.getElementById(`${section}-image-btn`).style.display = 'inline-block';
             showResult(`${section}-result`, '✓ AI生成完了!', 'success');
