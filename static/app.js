@@ -146,7 +146,7 @@ function postWithImage(section) {
     if (!image) return;
     fetch('/api/post', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, image})})
         .then(r => r.json())
-        .then(data => showResult(`${section}-result`, data.success ? `✓ 投稿完了! Tweet ID: ${data.tweet_id}` : `✗ 投稿失敗: ${data.error}`, data.success ? 'success' : 'error'));
+        .then(data => showResult(`${section}-image-result`, data.success ? `✓ 投稿完了! Tweet ID: ${data.tweet_id}` : `✗ 投稿失敗: ${data.error}`, data.success ? 'success' : 'error'));
 }
 
 function showResult(id, msg, type) {
