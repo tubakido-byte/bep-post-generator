@@ -2,46 +2,10 @@
 # -*- coding: utf-8 -*-
 import requests
 import base64
-import io
-import os
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from requests_oauthlib import OAuth1
-from PIL import Image, ImageDraw, ImageFont
 from config import X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, GEMINI_API_KEY, NEWS_SOURCES
-
-FONT_PATH = os.path.join(os.path.dirname(__file__), 'static', 'fonts', 'NotoSansJP-Bold.ttf')
-
-def _ensure_font():
-    if not os.path.exists(FONT_PATH):
-        os.makedirs(os.path.dirname(FONT_PATH), exist_ok=True)
-        url = "https://github.com/google/fonts/raw/main/ofl/notosansjp/NotoSansJP%5Bwght%5D.ttf"
-        r = requests.get(url, timeout=30)
-        with open(FONT_PATH, 'wb') as f:
-            f.write(r.content)
-
-def _add_text_overlay(image_b64: str, text: str) -> str:
-    try:
-        _ensure_font()
-        img = Image.open(io.BytesIO(base64.b64decode(image_b64))).convert('RGBA')
-        w, h = img.size
-        overlay = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(overlay)
-        font_size = max(22, w // 18)
-        font = ImageFont.truetype(FONT_PATH, font_size)
-        bbox = draw.textbbox((0, 0), text, font=font)
-        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        pad = 12
-        bar_top = h - th - pad * 2
-        draw.rectangle([0, bar_top, w, h], fill=(0, 0, 0, 170))
-        draw.text(((w - tw) // 2, bar_top + pad), text, font=font, fill=(255, 255, 255, 255))
-        result = Image.alpha_composite(img, overlay).convert('RGB')
-        buf = io.BytesIO()
-        result.save(buf, format='PNG')
-        return base64.b64encode(buf.getvalue()).decode()
-    except Exception as e:
-        print(f"[DEBUG] Text overlay error: {e}")
-        return image_b64
 
 def post_to_x(text: str, image_b64: str = None) -> dict:
     auth = OAuth1(X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET)
