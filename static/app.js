@@ -73,9 +73,6 @@ function generatePatterns(section) {
             const labels = data.labels || prompts;
             if (!prompts.length) return;
 
-            textarea.value = labels[0];
-            counter.textContent = labels[0].length;
-
             const list = document.getElementById(`${section}-patterns-list`);
             list.innerHTML = '';
             prompts.forEach((prompt, idx) => {
@@ -87,8 +84,6 @@ function generatePatterns(section) {
                         el.style.background = i === idx ? '#667eea' : '#2a2a2a';
                         el.style.borderColor = i === idx ? '#667eea' : '#444';
                     });
-                    textarea.value = labels[idx];
-                    counter.textContent = labels[idx].length;
                     selectedPrompt[section] = prompt;
                     document.getElementById(`${section}-image-btn`).style.display = 'inline-block';
                     document.getElementById(`${section}-image-section`).style.display = 'none';
