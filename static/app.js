@@ -3,33 +3,23 @@ const shortCount = document.getElementById('short-count');
 const opinionText = document.getElementById('opinion-text');
 const opinionCount = document.getElementById('opinion-count');
 let selectedArticle = null;
+let selectedPrompt = {short: null, news: null};
+let selectedImage = {short: null, news: null};
 
-shortText.addEventListener('input', () => {
-    shortCount.textContent = shortText.value.length;
-});
-
-opinionText?.addEventListener('input', () => {
-    opinionCount.textContent = opinionText.value.length;
-});
+shortText.addEventListener('input', () => { shortCount.textContent = shortText.value.length; });
+opinionText?.addEventListener('input', () => { opinionCount.textContent = opinionText.value.length; });
 
 function switchTab(tab) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-
-    if (tab === 'short') {
-        document.getElementById('short-section').classList.add('active');
-        document.querySelectorAll('.tab')[0].classList.add('active');
-    } else {
-        document.getElementById('news-section').classList.add('active');
-        document.querySelectorAll('.tab')[1].classList.add('active');
-    }
+    document.getElementById(`${tab}-section`).classList.add('active');
+    document.querySelectorAll('.tab')[tab === 'short' ? 0 : 1].classList.add('active');
 }
 
 function loadNews() {
     const source = document.getElementById('news-source').value;
-    const loadingMsg = document.getElementById('news-fetch-loading');
-    loadingMsg.classList.add('show');
-
+    const loading = document.getElementById('news-fetch-loading');
+    loading.classList.add('show');
     fetch(`/api/news?source=${encodeURIComponent(source)}`)
         .then(r => r.json())
         .then(data => {
@@ -38,215 +28,129 @@ function loadNews() {
             data.articles.forEach((article, idx) => {
                 const btn = document.createElement('button');
                 btn.className = 'article-btn';
-                btn.innerHTML = `
-                    <div class="article-title">${idx + 1}. ${article.title}</div>
-                    <div class="article-summary">${article.summary || '詳細なし'}</div>
-                `;
-                btn.onclick = () => selectArticle(article, idx, btn);
+                btn.innerHTML = `<div class="article-title">${idx + 1}. ${article.title}</div><div class="article-summary">${article.summary || '詳細なし'}</div>`;
+                btn.onclick = () => {
+                    selectedArticle = article;
+                    document.querySelectorAll('.article-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    document.getElementById('opinion-section').style.display = 'block';
+                    document.getElementById('opinion-label').textContent = `「${article.title}」についてのあなたの意見`;
+                };
                 list.appendChild(btn);
             });
-            loadingMsg.classList.remove('show');
+            loading.classList.remove('show');
         });
 }
 
-function selectArticle(article, idx, element) {
-    selectedArticle = article;
-    document.querySelectorAll('.article-btn').forEach(btn => btn.classList.remove('selected'));
-    element.classList.add('selected');
-    document.getElementById('opinion-section').style.display = 'block';
-    document.getElementById('opinion-label').textContent = `「${article.title}」についてのあなたの意見`;
+function postText(section) {
+    const text = section === 'short' ? shortText.value.trim() : opinionText.value.trim();
+    if (!text) { showResult(`${section}-result`, 'テキストを入力してください', 'error'); return; }
+    if (section === 'news' && !selectedArticle) { showResult('news-result', '記事を選択してください', 'error'); return; }
+    fetch('/api/post', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text})})
+        .then(r => r.json())
+        .then(data => showResult(`${section}-result`, data.success ? `✓ 投稿完了! Tweet ID: ${data.tweet_id}` : `✗ 投稿失敗: ${data.error}`, data.success ? 'success' : 'error'));
 }
 
-function postShort() {
-    const text = shortText.value.trim();
-    if (!text) {
-        showResult('short-result', 'テキストを入力してください', 'error');
-        return;
-    }
-    fetch('/api/post', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({text: text})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            showResult('short-result', `✓ 投稿完了! Tweet ID: ${data.tweet_id}`, 'success');
-        } else {
-            showResult('short-result', `✗ 投稿失敗: ${data.error}`, 'error');
-        }
-    });
-}
+function generatePatterns(section) {
+    const textarea = section === 'short' ? shortText : opinionText;
+    const counter = section === 'short' ? shortCount : opinionCount;
+    const topic = section === 'short' ? (textarea.value.trim() || 'X投稿') : `${selectedArticle?.title || ''}: ${textarea.value.trim() || '記事に同意'}`;
+    if (section === 'news' && !selectedArticle) { showResult('news-result', '記事を選択してください', 'error'); return; }
 
-let selectedShortPattern = null;
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '🤖 生成中...';
+    document.getElementById(`${section}-loading`).classList.add('show');
 
-function generateShort() {
-    const text = shortText.value.trim() || 'X投稿';
-    const genBtn = event.target;
-    genBtn.disabled = true;
-    genBtn.textContent = '🤖 生成中...';
+    fetch('/api/generate', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({topic})})
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.textContent = '🤖 AI生成';
+            document.getElementById(`${section}-loading`).classList.remove('show');
 
-    const loadingMsg = document.getElementById('short-loading');
-    loadingMsg.classList.add('show');
+            if (!data.posts?.length) return;
+            textarea.value = data.posts[0];
+            counter.textContent = data.posts[0].length;
 
-    fetch('/api/generate', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({topic: text})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.posts && data.posts.length > 0) {
-            shortText.value = data.posts[0];
-            shortCount.textContent = data.posts[0].length;
-            selectedShortPattern = 0;
-
-            const patternsList = document.getElementById('short-patterns-list');
-            patternsList.innerHTML = '';
+            const list = document.getElementById(`${section}-patterns-list`);
+            list.innerHTML = '';
             data.posts.forEach((post, idx) => {
-                const patternDiv = document.createElement('div');
-                const isSelected = idx === 0;
-                const bgColor = isSelected ? '#667eea' : '#2a2a2a';
-                const borderColor = isSelected ? '#667eea' : '#444';
-                patternDiv.className = isSelected ? 'pattern-selected' : '';
-                patternDiv.style.cssText = `padding: 15px; background: ${bgColor}; border: 2px solid ${borderColor}; border-radius: 6px; cursor: pointer; transition: all 0.3s;`;
-                patternDiv.innerHTML = `
-                    <div style="font-weight: 600; color: ${isSelected ? '#ffffff' : '#667eea'}; margin-bottom: 8px;">【パターン${idx + 1}】</div>
-                    <div style="color: #ffffff; line-height: 1.5;">${post}</div>
-                    <div style="font-size: 12px; color: #aaa; margin-top: 8px;">${post.length}文字</div>
-                `;
-                patternDiv.onmouseover = () => {
-                    if (idx !== selectedShortPattern) patternDiv.style.background = '#333';
-                };
-                patternDiv.onmouseout = () => {
-                    patternDiv.style.background = (idx === selectedShortPattern) ? '#667eea' : '#2a2a2a';
-                };
-                patternDiv.onclick = () => {
-                    selectedShortPattern = idx;
-                    document.querySelectorAll('#short-patterns-list > div').forEach((el, i) => {
-                        const selected = i === idx;
-                        el.style.background = selected ? '#667eea' : '#2a2a2a';
-                        el.style.borderColor = selected ? '#667eea' : '#444';
-                        el.querySelector('[style*="color"]').style.color = selected ? '#ffffff' : '#667eea';
+                const div = document.createElement('div');
+                div.style.cssText = `padding: 15px; background: ${idx === 0 ? '#667eea' : '#2a2a2a'}; border: 2px solid ${idx === 0 ? '#667eea' : '#444'}; border-radius: 6px; cursor: pointer;`;
+                div.innerHTML = `<div style="font-weight:600;color:#fff;margin-bottom:8px;">【パターン${idx + 1}】</div><div style="color:#fff;line-height:1.5;">${post}</div>`;
+                div.onclick = () => {
+                    list.querySelectorAll('div').forEach((el, i) => {
+                        el.style.background = i === idx ? '#667eea' : '#2a2a2a';
+                        el.style.borderColor = i === idx ? '#667eea' : '#444';
                     });
-                    shortText.value = post;
-                    shortCount.textContent = post.length;
-                    showResult('short-result', `✓ パターン${idx + 1}を選択しました`, 'success');
+                    textarea.value = post;
+                    counter.textContent = post.length;
+                    selectedPrompt[section] = post;
+                    document.getElementById(`${section}-image-btn`).style.display = 'inline-block';
+                    document.getElementById(`${section}-image-section`).style.display = 'none';
+                    showResult(`${section}-result`, `✓ パターン${idx + 1}を選択しました`, 'success');
                 };
-                patternsList.appendChild(patternDiv);
+                list.appendChild(div);
             });
 
-            document.getElementById('short-patterns').style.display = 'block';
-            showResult('short-result', '✓ AI生成完了!', 'success');
-        }
-        genBtn.disabled = false;
-        genBtn.textContent = '🤖 AI生成';
-        loadingMsg.classList.remove('show');
-    });
+            selectedPrompt[section] = data.posts[0];
+            document.getElementById(`${section}-patterns`).style.display = 'block';
+            document.getElementById(`${section}-image-btn`).style.display = 'inline-block';
+            showResult(`${section}-result`, '✓ AI生成完了!', 'success');
+        });
 }
 
-function postNews() {
-    if (!selectedArticle) {
-        showResult('news-result', '記事を選択してください', 'error');
-        return;
-    }
-    const opinion = opinionText.value.trim();
-    if (!opinion) {
-        showResult('news-result', '意見を入力してください', 'error');
-        return;
-    }
-    fetch('/api/post', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({text: opinion})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            showResult('news-result', `✓ 投稿完了! Tweet ID: ${data.tweet_id}`, 'success');
-        } else {
-            showResult('news-result', `✗ 投稿失敗: ${data.error}`, 'error');
-        }
-    });
-}
+function generateImages(section) {
+    const prompt = selectedPrompt[section];
+    if (!prompt) return;
+    const btn = document.getElementById(`${section}-image-btn`);
+    btn.disabled = true;
+    document.getElementById(`${section}-image-loading`).classList.add('show');
 
-let selectedNewsPattern = null;
+    fetch('/api/generate-images', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({prompt})})
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            document.getElementById(`${section}-image-loading`).classList.remove('show');
 
-function generateNews() {
-    if (!selectedArticle) {
-        showResult('news-result', '記事を選択してください', 'error');
-        return;
-    }
-    const opinion = opinionText.value.trim() || '記事に同意';
-    const title = selectedArticle.title;
+            const list = document.getElementById(`${section}-image-list`);
+            list.innerHTML = '';
+            const postBtn = document.getElementById(`${section}-post-with-image-btn`);
+            postBtn.style.display = 'none';
+            selectedImage[section] = null;
 
-    const genBtn = event.target;
-    genBtn.disabled = true;
-    genBtn.textContent = '🤖 生成中...';
-
-    const loadingMsg = document.getElementById('news-loading');
-    loadingMsg.classList.add('show');
-
-    fetch('/api/generate', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({topic: `${title}: ${opinion}`})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.posts && data.posts.length > 0) {
-            opinionText.value = data.posts[0];
-            opinionCount.textContent = data.posts[0].length;
-            selectedNewsPattern = 0;
-
-            const patternsList = document.getElementById('news-patterns-list');
-            patternsList.innerHTML = '';
-            data.posts.forEach((post, idx) => {
-                const patternDiv = document.createElement('div');
-                const isSelected = idx === 0;
-                const bgColor = isSelected ? '#667eea' : '#2a2a2a';
-                const borderColor = isSelected ? '#667eea' : '#444';
-                patternDiv.style.cssText = `padding: 15px; background: ${bgColor}; border: 2px solid ${borderColor}; border-radius: 6px; cursor: pointer; transition: all 0.3s;`;
-                patternDiv.innerHTML = `
-                    <div style="font-weight: 600; color: ${isSelected ? '#ffffff' : '#667eea'}; margin-bottom: 8px;">【パターン${idx + 1}】</div>
-                    <div style="color: #ffffff; line-height: 1.5;">${post}</div>
-                    <div style="font-size: 12px; color: #aaa; margin-top: 8px;">${post.length}文字</div>
-                `;
-                patternDiv.onmouseover = () => {
-                    if (idx !== selectedNewsPattern) patternDiv.style.background = '#333';
+            data.images.forEach(b64 => {
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = 'cursor:pointer;border:3px solid #444;border-radius:8px;overflow:hidden;';
+                const img = document.createElement('img');
+                img.src = `data:image/png;base64,${b64}`;
+                img.style.cssText = 'width:100%;display:block;';
+                wrapper.appendChild(img);
+                wrapper.onclick = () => {
+                    list.querySelectorAll('div').forEach(el => el.style.borderColor = '#444');
+                    wrapper.style.borderColor = '#667eea';
+                    selectedImage[section] = b64;
+                    postBtn.style.display = 'block';
                 };
-                patternDiv.onmouseout = () => {
-                    patternDiv.style.background = (idx === selectedNewsPattern) ? '#667eea' : '#2a2a2a';
-                };
-                patternDiv.onclick = () => {
-                    selectedNewsPattern = idx;
-                    document.querySelectorAll('#news-patterns-list > div').forEach((el, i) => {
-                        const selected = i === idx;
-                        el.style.background = selected ? '#667eea' : '#2a2a2a';
-                        el.style.borderColor = selected ? '#667eea' : '#444';
-                        el.querySelector('[style*="color"]').style.color = selected ? '#ffffff' : '#667eea';
-                    });
-                    opinionText.value = post;
-                    opinionCount.textContent = post.length;
-                    showResult('news-result', `✓ パターン${idx + 1}を選択しました`, 'success');
-                };
-                patternsList.appendChild(patternDiv);
+                list.appendChild(wrapper);
             });
 
-            document.getElementById('news-patterns').style.display = 'block';
-            showResult('news-result', '✓ AI生成完了!', 'success');
-        }
-        genBtn.disabled = false;
-        genBtn.textContent = '🤖 AI生成';
-        loadingMsg.classList.remove('show');
-    });
+            document.getElementById(`${section}-image-section`).style.display = 'block';
+        });
+}
+
+function postWithImage(section) {
+    const text = section === 'short' ? shortText.value.trim() : opinionText.value.trim();
+    const image = selectedImage[section];
+    if (!image) return;
+    fetch('/api/post', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, image})})
+        .then(r => r.json())
+        .then(data => showResult(`${section}-result`, data.success ? `✓ 投稿完了! Tweet ID: ${data.tweet_id}` : `✗ 投稿失敗: ${data.error}`, data.success ? 'success' : 'error'));
 }
 
 function showResult(id, msg, type) {
     const el = document.getElementById(id);
-    el.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center;">
-        <span>${msg}</span>
-        <button onclick="this.parentElement.parentElement.style.display='none'" style="background: none; border: none; color: #aaa; cursor: pointer; font-size: 18px; padding: 0 10px;">×</button>
-    </div>`;
+    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><span>${msg}</span><button onclick="this.parentElement.parentElement.style.display='none'" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:18px;padding:0 10px;">×</button></div>`;
     el.className = `result ${type}`;
 }

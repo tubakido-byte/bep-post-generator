@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import os
-from api_handlers import post_to_x, generate_posts, get_news_articles
+from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles
 
 app = Flask(__name__)
 
@@ -11,23 +11,20 @@ def dashboard():
 @app.route('/api/news')
 def api_news():
     source = request.args.get('source', '🌍 Axios')
-    articles = get_news_articles(source)
-    return jsonify({'articles': articles})
+    return jsonify({'articles': get_news_articles(source)})
 
 @app.route('/api/post', methods=['POST'])
 def api_post():
     data = request.get_json()
-    text = data.get('text', '')
-    result = post_to_x(text)
-    return jsonify(result)
+    return jsonify(post_to_x(data.get('text', ''), data.get('image', '')))
 
 @app.route('/api/generate', methods=['POST'])
 def api_generate():
-    data = request.get_json()
-    topic = data.get('topic', 'X投稿')
-    posts = generate_posts(topic)
-    return jsonify({'posts': posts})
+    return jsonify({'posts': generate_posts(request.get_json().get('topic', 'X投稿'))})
+
+@app.route('/api/generate-images', methods=['POST'])
+def api_generate_images():
+    return jsonify({'images': generate_images(request.get_json().get('prompt', ''))})
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)

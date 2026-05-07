@@ -26,8 +26,8 @@
                 <textarea id="short-text" placeholder="投稿したいテキストを入力してください（最大280文字）" rows="6"></textarea>
                 <div class="char-count"><span id="short-count">0</span> / 280文字</div>
             </div>
-            <button onclick="postShort()">📤 投稿する</button>
-            <button class="secondary" onclick="generateShort()">🤖 AI生成</button>
+            <button onclick="postText('short')">📤 投稿する</button>
+            <button class="secondary" onclick="generatePatterns('short')">🤖 AI生成</button>
             <div id="short-loading" class="loading-message">⏳ 1分～2分程お待ちください...</div>
             <div id="short-result" class="result"></div>
 
@@ -35,6 +35,15 @@
             <div id="short-patterns" style="margin-top: 30px; display: none;">
                 <div class="section-title" style="font-size: 18px; margin-bottom: 15px;">生成されたパターン</div>
                 <div id="short-patterns-list" style="display: grid; grid-template-columns: 1fr; gap: 15px;"></div>
+                <button id="short-image-btn" class="secondary" style="margin-top: 15px; display: none;" onclick="generateImages('short')">🖼️ 画像生成（3種類）</button>
+                <div id="short-image-loading" class="loading-message">⏳ 画像生成中（1〜2分）...</div>
+            </div>
+
+            <!-- 画像選択エリア -->
+            <div id="short-image-section" style="margin-top: 30px; display: none;">
+                <div class="section-title" style="font-size: 18px; margin-bottom: 15px;">画像を選択</div>
+                <div id="short-image-list" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;"></div>
+                <button id="short-post-with-image-btn" style="margin-top: 15px; display: none;" onclick="postWithImage('short')">📤 選択した画像でX投稿</button>
             </div>
         </div>
 
@@ -71,8 +80,8 @@
                     <textarea id="opinion-text" placeholder="この記事についてのあなたの考えを入力してください（最大280文字）" rows="4"></textarea>
                     <div class="char-count"><span id="opinion-count">0</span> / 280文字</div>
                 </div>
-                <button onclick="postNews()">📤 投稿する</button>
-                <button class="secondary" onclick="generateNews()">🤖 AI生成</button>
+                <button onclick="postText('news')">📤 投稿する</button>
+                <button class="secondary" onclick="generatePatterns('news')">🤖 AI生成</button>
                 <div id="news-loading" class="loading-message">⏳ 1分～2分程お待ちください...</div>
             </div>
 
@@ -82,6 +91,15 @@
             <div id="news-patterns" style="margin-top: 30px; display: none;">
                 <div class="section-title" style="font-size: 18px; margin-bottom: 15px;">生成されたパターン</div>
                 <div id="news-patterns-list" style="display: grid; grid-template-columns: 1fr; gap: 15px;"></div>
+                <button id="news-image-btn" class="secondary" style="margin-top: 15px; display: none;" onclick="generateImages('news')">🖼️ 画像生成（3種類）</button>
+                <div id="news-image-loading" class="loading-message">⏳ 画像生成中（1〜2分）...</div>
+            </div>
+
+            <!-- 画像選択エリア -->
+            <div id="news-image-section" style="margin-top: 30px; display: none;">
+                <div class="section-title" style="font-size: 18px; margin-bottom: 15px;">画像を選択</div>
+                <div id="news-image-list" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;"></div>
+                <button id="news-post-with-image-btn" style="margin-top: 15px; display: none;" onclick="postWithImage('news')">📤 選択した画像でX投稿</button>
             </div>
         </div>
     </div>
