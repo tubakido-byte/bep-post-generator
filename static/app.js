@@ -84,6 +84,8 @@ function generatePatterns(section) {
                         el.style.background = i === idx ? '#667eea' : '#2a2a2a';
                         el.style.borderColor = i === idx ? '#667eea' : '#444';
                     });
+                    textarea.value = prompt;
+                    counter.textContent = prompt.length;
                     selectedPrompt[section] = prompt;
                     document.getElementById(`${section}-image-btn`).style.display = 'inline-block';
                     document.getElementById(`${section}-image-section`).style.display = 'none';
