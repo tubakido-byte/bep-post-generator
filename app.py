@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
-import os
+import os, requests
 from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles
+from config import GEMINI_API_KEY
 
 app = Flask(__name__)
 
@@ -26,6 +27,16 @@ def api_generate():
 @app.route('/api/generate-images', methods=['POST'])
 def api_generate_images():
     return jsonify({'images': generate_images(request.get_json().get('prompt', ''))})
+
+@app.route('/api/debug-image')
+def debug_image():
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key={GEMINI_API_KEY}"
+    payload = {"contents": [{"parts": [{"text": "a beautiful sunset over mountains"}]}], "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]}}
+    try:
+        r = requests.post(url, json=payload, timeout=60)
+        return jsonify({"status": r.status_code, "response": r.text[:1000]})
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
