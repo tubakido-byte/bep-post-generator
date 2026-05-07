@@ -80,7 +80,7 @@ function generatePatterns(section) {
                 div.style.cssText = `padding: 15px; background: ${idx === 0 ? '#667eea' : '#2a2a2a'}; border: 2px solid ${idx === 0 ? '#667eea' : '#444'}; border-radius: 6px; cursor: pointer;`;
                 div.innerHTML = `<div style="font-weight:600;color:#fff;margin-bottom:8px;">【パターン${idx + 1}】</div><div style="color:#fff;line-height:1.5;">${labels[idx]}</div>`;
                 div.onclick = () => {
-                    list.querySelectorAll('div').forEach((el, i) => {
+                    Array.from(list.children).forEach((el, i) => {
                         el.style.background = i === idx ? '#667eea' : '#2a2a2a';
                         el.style.borderColor = i === idx ? '#667eea' : '#444';
                     });
