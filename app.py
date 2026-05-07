@@ -26,7 +26,7 @@ def api_generate():
 
 @app.route('/api/generate-images', methods=['POST'])
 def api_generate_images():
-    return jsonify({'images': generate_images(request.get_json().get('prompt', ''))})
+    return jsonify(generate_images(request.get_json().get('prompt', '')))
 
 @app.route('/api/list-models')
 def list_models():

@@ -120,24 +120,50 @@ function generateImages(section) {
             postBtn.style.display = 'none';
             selectedImage[section] = null;
 
-            data.images.forEach(b64 => {
-                const wrapper = document.createElement('div');
-                wrapper.style.cssText = 'cursor:pointer;border:3px solid #444;border-radius:8px;overflow:hidden;';
-                const img = document.createElement('img');
-                img.src = `data:image/png;base64,${b64}`;
-                img.style.cssText = 'width:100%;display:block;';
-                wrapper.appendChild(img);
-                wrapper.onclick = () => {
-                    list.querySelectorAll('div').forEach(el => el.style.borderColor = '#444');
-                    wrapper.style.borderColor = '#667eea';
-                    selectedImage[section] = b64;
-                    postBtn.style.display = 'block';
-                };
-                list.appendChild(wrapper);
+            const title = data.title || '';
+            (data.images || []).forEach(b64 => {
+                addTitleToImage(b64, title, composited => {
+                    const wrapper = document.createElement('div');
+                    wrapper.style.cssText = 'cursor:pointer;border:3px solid #444;border-radius:8px;overflow:hidden;';
+                    const img = document.createElement('img');
+                    img.src = `data:image/png;base64,${composited}`;
+                    img.style.cssText = 'width:100%;display:block;';
+                    wrapper.appendChild(img);
+                    wrapper.onclick = () => {
+                        list.querySelectorAll('div').forEach(el => el.style.borderColor = '#444');
+                        wrapper.style.borderColor = '#667eea';
+                        selectedImage[section] = composited;
+                        postBtn.style.display = 'block';
+                    };
+                    list.appendChild(wrapper);
+                });
             });
 
             document.getElementById(`${section}-image-section`).style.display = 'block';
         });
+}
+
+function addTitleToImage(b64, text, callback) {
+    const canvas = document.createElement('canvas');
+    const img = new Image();
+    img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        if (text) {
+            const barH = Math.round(img.height * 0.11);
+            ctx.fillStyle = 'rgba(0,0,0,0.68)';
+            ctx.fillRect(0, img.height - barH, img.width, barH);
+            ctx.fillStyle = '#fff';
+            ctx.font = `bold ${Math.round(barH * 0.55)}px "Yu Gothic","Hiragino Sans","Meiryo",sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, img.width / 2, img.height - barH / 2);
+        }
+        callback(canvas.toDataURL('image/png').split(',')[1]);
+    };
+    img.src = `data:image/png;base64,${b64}`;
 }
 
 function postWithImage(section) {

@@ -43,7 +43,7 @@ def _call_gemini(prompt: str) -> str:
     return ""
 
 def _generate_one_image(prompt: str) -> str:
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/nano-banana-pro-preview:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key={GEMINI_API_KEY}"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"responseModalities": ["IMAGE"]}
@@ -95,11 +95,9 @@ SNSのタイムラインでユーザーの指を止め、直感的に「保存�
     jp_title = lines[0].strip()[:16] if lines else tweet_text[:16]
     image_prompt = lines[1].strip() if len(lines) > 1 else tweet_text
 
-    full_prompt = f"{image_prompt}\n\nAt the bottom of the image, add a semi-transparent dark bar with this exact Japanese text in large bold white font: 「{jp_title}」"
-
     with ThreadPoolExecutor(max_workers=3) as ex:
-        results = list(ex.map(_generate_one_image, [full_prompt] * 3))
-    return [r for r in results if r]
+        results = list(ex.map(_generate_one_image, [image_prompt] * 3))
+    return {"images": [r for r in results if r], "title": jp_title}
 
 def generate_posts(topic: str) -> dict:
     prompts_list = [
