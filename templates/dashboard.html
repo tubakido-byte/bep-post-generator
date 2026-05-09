@@ -31,7 +31,9 @@
             </div>
             <button onclick="postText('short')">📤 投稿する</button>
             <button class="secondary" onclick="generatePatterns('short')">🤖 AI生成</button>
+            <button class="secondary" onclick="generateImagesFromText('short')">🖼️ 画像生成（3種類）</button>
             <div id="short-loading" class="loading-message">⏳ 1分～2分程お待ちください...</div>
+            <div id="short-direct-image-loading" class="loading-message">⏳ 画像生成中（1〜2分）...</div>
             <div id="short-result" class="result"></div>
 
             <!-- 生成されたパターン表示 -->

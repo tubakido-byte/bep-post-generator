@@ -177,6 +177,56 @@ function generateImages(section) {
             });
 
             document.getElementById(`${section}-image-section`).style.display = 'block';
+        })
+        .catch(() => {
+            btn.disabled = false;
+            document.getElementById(`${section}-image-loading`).classList.remove('show');
+            showResult(`${section}-result`, '✗ 画像生成がタイムアウトしました。再度お試しください', 'error');
+        });
+}
+
+function generateImagesFromText(section) {
+    const textarea = section === 'short' ? shortText : opinionText;
+    const prompt = textarea.value.trim();
+    if (!prompt) { showResult(`${section}-result`, 'テキストを入力してください', 'error'); return; }
+    selectedPrompt[section] = prompt;
+    const loadingId = `${section}-direct-image-loading`;
+    document.getElementById(loadingId).classList.add('show');
+    fetch('/api/generate-images', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({prompt})})
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById(loadingId).classList.remove('show');
+            if (data.error || !data.images || !data.images.length) {
+                showResult(`${section}-result`, '✗ 画像を生成できませんでした。再度お試しください', 'error'); return;
+            }
+            const list = document.getElementById(`${section}-image-list`);
+            list.innerHTML = '';
+            const postBtn = document.getElementById(`${section}-post-with-image-btn`);
+            postBtn.style.display = 'none';
+            selectedImage[section] = null;
+            const title = data.title || '';
+            (data.images || []).forEach(b64 => {
+                addTitleToImage(b64, title, composited => {
+                    const wrapper = document.createElement('div');
+                    wrapper.style.cssText = 'cursor:pointer;border:3px solid #444;border-radius:8px;overflow:hidden;';
+                    const img = document.createElement('img');
+                    img.src = `data:image/png;base64,${composited}`;
+                    img.style.cssText = 'width:100%;display:block;';
+                    wrapper.appendChild(img);
+                    wrapper.onclick = () => {
+                        list.querySelectorAll('div').forEach(el => el.style.borderColor = '#444');
+                        wrapper.style.borderColor = '#667eea';
+                        selectedImage[section] = composited;
+                        postBtn.style.display = 'block';
+                    };
+                    list.appendChild(wrapper);
+                });
+            });
+            document.getElementById(`${section}-image-section`).style.display = 'block';
+        })
+        .catch(() => {
+            document.getElementById(loadingId).classList.remove('show');
+            showResult(`${section}-result`, '✗ 画像生成がタイムアウトしました。再度お試しください', 'error');
         });
 }
 
