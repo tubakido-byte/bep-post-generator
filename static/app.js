@@ -95,6 +95,8 @@ function generatePatterns(section) {
             });
 
             selectedPrompt[section] = prompts[0];
+            textarea.value = prompts[0];
+            counter.textContent = prompts[0].length;
             document.getElementById(`${section}-patterns`).style.display = 'block';
             document.getElementById(`${section}-image-btn`).style.display = 'inline-block';
             showResult(`${section}-result`, '✓ AI生成完了!', 'success');
