@@ -55,15 +55,21 @@ def _generate_one_image(prompt: str) -> str:
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]}
     }
-    try:
-        r = requests.post(url, json=payload, timeout=60)
-        if r.status_code == 200:
-            for part in r.json()['candidates'][0]['content']['parts']:
-                if 'inlineData' in part:
-                    return part['inlineData']['data']
-        print(f"[DEBUG] Image gen error: {r.status_code} {r.text[:200]}")
-    except Exception as e:
-        print(f"[DEBUG] Image gen error: {e}")
+    for attempt in range(3):
+        try:
+            r = requests.post(url, json=payload, timeout=90)
+            if r.status_code == 200:
+                for part in r.json()['candidates'][0]['content']['parts']:
+                    if 'inlineData' in part:
+                        return part['inlineData']['data']
+            if r.status_code == 429 and attempt < 2:
+                time.sleep(3 + attempt * 2)
+                continue
+            print(f"[DEBUG] Image gen error: {r.status_code} {r.text[:200]}")
+        except Exception as e:
+            print(f"[DEBUG] Image gen error (attempt {attempt+1}): {e}")
+            if attempt < 2:
+                time.sleep(2)
     return ""
 
 def generate_images(tweet_text: str) -> list:
