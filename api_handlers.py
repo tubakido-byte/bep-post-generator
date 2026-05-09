@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 import requests
 import base64
+import time
 import xml.etree.ElementTree as ET
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from requests_oauthlib import OAuth1
 from config import X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, GEMINI_API_KEY, NEWS_SOURCES
 
@@ -32,14 +33,20 @@ def post_to_x(text: str, image_b64: str = None) -> dict:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-def _call_gemini(prompt: str) -> str:
+def _call_gemini(prompt: str, retries: int = 2) -> str:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-    try:
-        r = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=25)
-        if r.status_code == 200:
-            return r.json()['candidates'][0]['content']['parts'][0]['text'].strip()
-    except Exception as e:
-        print(f"[DEBUG] Gemini error: {e}")
+    for attempt in range(retries):
+        try:
+            r = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=20)
+            if r.status_code == 200:
+                return r.json()['candidates'][0]['content']['parts'][0]['text'].strip()
+            if r.status_code == 429 and attempt < retries - 1:
+                time.sleep(2)
+                continue
+        except Exception as e:
+            print(f"[DEBUG] Gemini error (attempt {attempt+1}): {e}")
+            if attempt < retries - 1:
+                time.sleep(1)
     return ""
 
 def _generate_one_image(prompt: str) -> str:
@@ -117,21 +124,27 @@ def generate_posts(topic: str) -> dict:
     ]
     patterns = [None, None, None]
     with ThreadPoolExecutor(max_workers=3) as executor:
-        futures = {executor.submit(_call_gemini, p): i for i, p in enumerate(prompts_list)}
-        for future in futures:
-            idx = futures[future]
+        future_to_idx = {executor.submit(_call_gemini, p): i for i, p in enumerate(prompts_list)}
+        for future in as_completed(future_to_idx, timeout=25):
+            idx = future_to_idx[future]
             try:
                 text = future.result()
                 if text and len(text) > 5:
                     patterns[idx] = text[:280]
             except Exception as e:
                 print(f"[DEBUG] Future error: {e}")
+    for i, p in enumerate(patterns):
+        if p is None:
+            patterns[i] = _call_gemini(prompts_list[i])
     result = [p for p in patterns if p]
     posts = result if result else [topic]
     return {"prompts": posts, "labels": posts}
 
 def _fetch_rss(url: str) -> list:
-    resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}, timeout=15)
+    resp = requests.get(url, headers={
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/rss+xml, application/xml, text/xml, */*"
+    }, timeout=15)
     root = ET.fromstring(resp.content)
     raw = []
     for item in root.findall('.//item')[:5]:
