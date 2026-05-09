@@ -121,6 +121,12 @@ function generatePatterns(section) {
             document.getElementById(`${section}-patterns`).style.display = 'block';
             document.getElementById(`${section}-image-btn`).style.display = 'inline-block';
             showResult(`${section}-result`, '✓ AI生成完了!', 'success');
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = '🤖 AI生成';
+            document.getElementById(`${section}-loading`).classList.remove('show');
+            showResult(`${section}-result`, '✗ 通信エラー：しばらく待ってから再度お試しください', 'error');
         });
 }
 
