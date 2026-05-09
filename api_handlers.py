@@ -28,7 +28,9 @@ def post_to_x(text: str, image_b64: str = None) -> dict:
 
         r = requests.post("https://api.twitter.com/2/tweets", json=body, auth=auth, timeout=30)
         if r.status_code == 201:
-            return {"success": True, "tweet_id": r.json()['data']['id']}
+            tweet_id = r.json()['data']['id']
+            tweet_url = f"https://x.com/akira_kanou/status/{tweet_id}"
+            return {"success": True, "tweet_id": tweet_id, "tweet_url": tweet_url}
         return {"success": False, "error": r.text[:200]}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -118,8 +120,12 @@ SNSのタイムラインでユーザーの指を止め、直感的に「保存�
     while len(prompts) < 3:
         prompts.append(prompts[0] if prompts else tweet_text)
 
-    with ThreadPoolExecutor(max_workers=3) as ex:
-        results = list(ex.map(_generate_one_image, prompts[:3]))
+    results = []
+    for i, p in enumerate(prompts[:3]):
+        img = _generate_one_image(p)
+        results.append(img)
+        if i < 2:
+            time.sleep(2)
     return {"images": [r for r in results if r], "title": jp_title}
 
 def _shorten_to_280(text: str) -> str:

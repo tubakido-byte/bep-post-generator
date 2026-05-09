@@ -66,7 +66,13 @@ function postText(section) {
     if (section === 'news' && !selectedArticle) { showResult('news-result', '記事を選択してください', 'error'); return; }
     fetch('/api/post', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text})})
         .then(r => r.json())
-        .then(data => showResult(`${section}-result`, data.success ? `✓ 投稿完了! Tweet ID: ${data.tweet_id}` : `✗ 投稿失敗: ${data.error}`, data.success ? 'success' : 'error'));
+        .then(data => {
+            if (data.success) {
+                showResult(`${section}-result`, `✓ 投稿完了！ <a href="${data.tweet_url}" target="_blank" style="color:#1da1f2;">Xで確認する →</a>`, 'success');
+            } else {
+                showResult(`${section}-result`, `✗ 投稿失敗: ${data.error}`, 'error');
+            }
+        });
 }
 
 function generatePatterns(section) {
@@ -203,7 +209,13 @@ function postWithImage(section) {
     if (!image) return;
     fetch('/api/post', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, image})})
         .then(r => r.json())
-        .then(data => showResult(`${section}-image-result`, data.success ? `✓ 投稿完了! Tweet ID: ${data.tweet_id}` : `✗ 投稿失敗: ${data.error}`, data.success ? 'success' : 'error'));
+        .then(data => {
+            if (data.success) {
+                showResult(`${section}-image-result`, `✓ 投稿完了！ <a href="${data.tweet_url}" target="_blank" style="color:#1da1f2;">Xで確認する →</a>`, 'success');
+            } else {
+                showResult(`${section}-image-result`, `✗ 投稿失敗: ${data.error}`, 'error');
+            }
+        });
 }
 
 function showResult(id, msg, type) {
