@@ -187,3 +187,22 @@ def get_news_articles(source: str) -> list:
             print(f"[DEBUG] Translate error: {e}")
 
     return [{"title": a['title'], "summary": '', "link": a['link']} for a in raw]
+
+def health_check() -> dict:
+    results = {"gemini": "NG", "x_api": "NG", "env_vars": "NG", "overall": "NG"}
+
+    missing = [k for k in ["GEMINI_API_KEY", "X_CONSUMER_KEY", "X_CONSUMER_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET"]
+               if not __import__('os').environ.get(k)]
+    results["env_vars"] = "OK" if not missing else f"未設定: {', '.join(missing)}"
+
+    try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+        r = requests.post(url, json={"contents": [{"parts": [{"text": "ping"}]}]}, timeout=10)
+        results["gemini"] = "OK" if r.status_code == 200 else f"エラー {r.status_code}"
+    except Exception as e:
+        results["gemini"] = f"接続失敗: {str(e)[:50]}"
+
+    results["x_api"] = "OK" if all([X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET]) else "APIキー未設定"
+
+    results["overall"] = "OK" if all(v == "OK" for v in [results["gemini"], results["x_api"], results["env_vars"]]) else "NG"
+    return results

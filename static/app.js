@@ -1,3 +1,16 @@
+// 起動時API状態チェック
+fetch('/api/health').then(r => r.json()).then(data => {
+    const bar = document.getElementById('health-bar');
+    if (data.overall === 'OK') {
+        bar.style.cssText = 'display:block;background:#1a3a1a;color:#4caf50;padding:6px 12px;border-radius:6px;margin-bottom:10px;font-size:13px;text-align:center;';
+        bar.textContent = '✅ 全システム正常稼働中';
+        setTimeout(() => bar.style.display = 'none', 4000);
+    } else {
+        bar.style.cssText = 'display:block;background:#3a1a1a;color:#f44336;padding:6px 12px;border-radius:6px;margin-bottom:10px;font-size:13px;text-align:center;';
+        bar.textContent = `⚠️ システム異常検知 — Gemini: ${data.gemini} / X API: ${data.x_api}`;
+    }
+}).catch(() => {});
+
 const shortText = document.getElementById('short-text');
 const shortCount = document.getElementById('short-count');
 const opinionText = document.getElementById('opinion-text');
@@ -23,6 +36,8 @@ function loadNews() {
     fetch(`/api/news?source=${encodeURIComponent(source)}`)
         .then(r => r.json())
         .then(data => {
+            loading.classList.remove('show');
+            if (data.error) { showResult('news-result', `✗ ${data.error}`, 'error'); return; }
             const list = document.getElementById('article-list');
             list.innerHTML = '';
             data.articles.forEach((article, idx) => {
@@ -38,7 +53,10 @@ function loadNews() {
                 };
                 list.appendChild(btn);
             });
+        })
+        .catch(() => {
             loading.classList.remove('show');
+            showResult('news-result', '✗ ネットワークエラー：ニュース取得に失敗しました', 'error');
         });
 }
 
@@ -69,9 +87,10 @@ function generatePatterns(section) {
             btn.textContent = '🤖 AI生成';
             document.getElementById(`${section}-loading`).classList.remove('show');
 
+            if (data.error) { showResult(`${section}-result`, `✗ ${data.error}`, 'error'); return; }
             const prompts = data.prompts || [];
             const labels = data.labels || prompts;
-            if (!prompts.length) return;
+            if (!prompts.length) { showResult(`${section}-result`, '✗ パターンを生成できませんでした。再度お試しください', 'error'); return; }
 
             const list = document.getElementById(`${section}-patterns-list`);
             list.innerHTML = '';
@@ -116,11 +135,13 @@ function generateImages(section) {
             btn.disabled = false;
             document.getElementById(`${section}-image-loading`).classList.remove('show');
 
+            if (data.error) { showResult(`${section}-result`, `✗ ${data.error}`, 'error'); return; }
             const list = document.getElementById(`${section}-image-list`);
             list.innerHTML = '';
             const postBtn = document.getElementById(`${section}-post-with-image-btn`);
             postBtn.style.display = 'none';
             selectedImage[section] = null;
+            if (!data.images || !data.images.length) { showResult(`${section}-result`, '✗ 画像を生成できませんでした。再度お試しください', 'error'); return; }
 
             const title = data.title || '';
             (data.images || []).forEach(b64 => {
