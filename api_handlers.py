@@ -125,11 +125,16 @@ def _shorten_to_280(text: str) -> str:
     return shortened[:280] if shortened else text[:277] + "..."
 
 def generate_posts(topic: str) -> dict:
-    rule = "【必須ルール】日本語で書く場合、必ず270文字以内で完結した文章にすること。文章が途中で切れることは絶対に禁止。"
+    rule = (
+        "【絶対厳守】140文字〜200文字以内で書くこと。"
+        "200文字を超えた場合は失敗とみなす。"
+        "文章は必ず完結させること（途中で切れるのは絶対禁止）。"
+        "余計な説明・前置き・後書きは不要。投稿文のみ出力。"
+    )
     prompts_list = [
-        f"X（Twitter）投稿を1つだけ書いてください。感情・共感を前面に出した文体。270文字以内で必ず文章を完結させること。説明不要、投稿文のみ出力。{rule}\n元のテキスト：{topic}",
-        f"X（Twitter）投稿を1つだけ書いてください。客観的な事実と分析の文体。270文字以内で必ず文章を完結させること。説明不要、投稿文のみ出力。{rule}\n元のテキスト：{topic}",
-        f"X（Twitter）投稿を1つだけ書いてください。読者への問いかけ・対話を促す文体。270文字以内で必ず文章を完結させること。説明不要、投稿文のみ出力。{rule}\n元のテキスト：{topic}",
+        f"X（Twitter）投稿を1つ書いてください。【文体】感情・共感を前面に出した文体。{rule}\n【元のテキスト】{topic}",
+        f"X（Twitter）投稿を1つ書いてください。【文体】客観的な事実と分析の文体。{rule}\n【元のテキスト】{topic}",
+        f"X（Twitter）投稿を1つ書いてください。【文体】読者への問いかけ・対話を促す文体。{rule}\n【元のテキスト】{topic}",
     ]
     patterns = [None, None, None]
     with ThreadPoolExecutor(max_workers=3) as executor:
