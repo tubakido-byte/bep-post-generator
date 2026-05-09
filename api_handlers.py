@@ -46,7 +46,7 @@ def _generate_one_image(prompt: str) -> str:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key={GEMINI_API_KEY}"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"responseModalities": ["IMAGE"]}
+        "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]}
     }
     try:
         r = requests.post(url, json=payload, timeout=60)
