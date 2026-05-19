@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
-import os, requests, uuid, atexit
+import os, requests, uuid, threading
 from datetime import datetime
-from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles, health_check
 from config import GEMINI_API_KEY
@@ -9,10 +8,15 @@ from config import GEMINI_API_KEY
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'xpost-secret-2024')
 
-scheduler = BackgroundScheduler(timezone=pytz.timezone('Asia/Tokyo'))
-scheduler.start()
-atexit.register(lambda: scheduler.shutdown())
+_jst = pytz.timezone('Asia/Tokyo')
 scheduled_posts = {}
+_timers = {}
+
+def _execute_scheduled_post(job_id, text):
+    result = post_to_x(text, '')
+    if job_id in scheduled_posts:
+        scheduled_posts[job_id]['status'] = '投稿済み ✅' if result.get('success') else '失敗 ❌'
+    _timers.pop(job_id, None)
 
 APP_USERNAME = os.environ.get('APP_USERNAME', 'admin')
 APP_PASSWORD = os.environ.get('APP_PASSWORD', 'xpost2024')
@@ -92,15 +96,17 @@ def api_schedule():
     if not text or not scheduled_time_str:
         return jsonify({'success': False, 'error': '投稿テキストまたは日時が未入力です'})
     try:
-        dt = datetime.fromisoformat(scheduled_time_str)
+        dt = _jst.localize(datetime.fromisoformat(scheduled_time_str))
+        delay = (dt - datetime.now(_jst)).total_seconds()
+        if delay <= 0:
+            return jsonify({'success': False, 'error': '過去の日時は指定できません'})
     except ValueError:
         return jsonify({'success': False, 'error': '日時フォーマットエラー'})
     job_id = str(uuid.uuid4())[:8]
-    def run_post():
-        result = post_to_x(text, '')
-        if job_id in scheduled_posts:
-            scheduled_posts[job_id]['status'] = '投稿済み ✅' if result.get('success') else '失敗 ❌'
-    scheduler.add_job(run_post, 'date', run_date=dt, id=job_id)
+    timer = threading.Timer(delay, _execute_scheduled_post, args=[job_id, text])
+    timer.daemon = True
+    timer.start()
+    _timers[job_id] = timer
     scheduled_posts[job_id] = {
         'text': text[:50] + '…' if len(text) > 50 else text,
         'full_text': text,
@@ -119,10 +125,9 @@ def api_scheduled_posts():
 def api_cancel_schedule(job_id):
     if not session.get('logged_in'):
         return jsonify({'success': False})
-    try:
-        scheduler.remove_job(job_id)
-    except Exception:
-        pass
+    timer = _timers.pop(job_id, None)
+    if timer:
+        timer.cancel()
     if job_id in scheduled_posts:
         scheduled_posts[job_id]['status'] = 'キャンセル ❌'
     return jsonify({'success': True})
