@@ -2,13 +2,14 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 import os, requests, uuid, atexit
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
+import pytz
 from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles, health_check
 from config import GEMINI_API_KEY
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'xpost-secret-2024')
 
-scheduler = BackgroundScheduler(timezone='Asia/Tokyo')
+scheduler = BackgroundScheduler(timezone=pytz.timezone('Asia/Tokyo'))
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown())
 scheduled_posts = {}
