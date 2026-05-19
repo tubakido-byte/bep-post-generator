@@ -10,7 +10,7 @@
     <div class="container">
         <!-- ログアウトリンク -->
         <div style="text-align:right;margin-bottom:6px;">
-            <a href="https://www.ins-japan.com/logout/" target="_top" style="font-size:12px;color:#aaa;text-decoration:none;">🚪 ログアウト</a>
+            <a href="/logout" style="font-size:12px;color:#aaa;text-decoration:none;">🚪 ログアウト</a>
         </div>
 
         <!-- API状態バー -->
@@ -23,6 +23,9 @@
             </button>
             <button class="tab" onclick="switchTab('news')">
                 📰 ニュース投稿
+            </button>
+            <button class="tab" onclick="switchTab('schedule')">
+                📅 予約投稿
             </button>
         </div>
 
@@ -116,6 +119,85 @@
         </div>
     </div>
 
+        <!-- 予約投稿セクション -->
+        <div id="schedule-section" class="section">
+            <div class="section-title">📅 予約投稿</div>
+            <div class="form-group">
+                <label>投稿テキスト</label>
+                <textarea id="schedule-text" placeholder="予約する投稿テキストを入力してください（最大280文字）" rows="6"></textarea>
+                <div class="char-count"><span id="schedule-count">0</span> / 280文字</div>
+            </div>
+            <div class="form-group">
+                <label>投稿日時（日本時間）</label>
+                <input type="datetime-local" id="schedule-datetime" style="width:100%;padding:10px;border-radius:8px;border:1px solid #333;background:#1a1a2e;color:#e0e0e0;font-size:15px;">
+            </div>
+            <button onclick="schedulePost()">📅 予約登録</button>
+            <div id="schedule-result" class="result"></div>
+
+            <div style="margin-top:30px;">
+                <div class="section-title" style="font-size:18px;margin-bottom:15px;">予約一覧</div>
+                <button class="secondary" onclick="loadScheduledPosts()">🔄 一覧を更新</button>
+                <div id="schedule-list" style="margin-top:15px;"></div>
+            </div>
+        </div>
+
     <script src="/static/app.js"></script>
+    <script>
+        // 予約投稿
+        document.getElementById('schedule-text').addEventListener('input', function() {
+            document.getElementById('schedule-count').textContent = this.value.length;
+        });
+
+        function schedulePost() {
+            const text = document.getElementById('schedule-text').value.trim();
+            const dt = document.getElementById('schedule-datetime').value;
+            const resultEl = document.getElementById('schedule-result');
+            if (!text || !dt) {
+                resultEl.innerHTML = '<p style="color:#ff6b6b;">❌ テキストと日時を入力してください</p>';
+                return;
+            }
+            resultEl.innerHTML = '<p>⏳ 登録中...</p>';
+            fetch('/api/schedule', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text, scheduled_time: dt})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    resultEl.innerHTML = '<p style="color:#4CAF50;">✅ 予約登録完了！ Job ID: ' + data.job_id + '</p>';
+                    document.getElementById('schedule-text').value = '';
+                    loadScheduledPosts();
+                } else {
+                    resultEl.innerHTML = '<p style="color:#ff6b6b;">❌ ' + data.error + '</p>';
+                }
+            });
+        }
+
+        function loadScheduledPosts() {
+            fetch('/api/scheduled-posts')
+            .then(r => r.json())
+            .then(data => {
+                const el = document.getElementById('schedule-list');
+                if (!data.posts || data.posts.length === 0) {
+                    el.innerHTML = '<p style="color:#aaa;">予約投稿はありません</p>';
+                    return;
+                }
+                el.innerHTML = data.posts.map(p => `
+                    <div style="background:#1a1a2e;border:1px solid #333;border-radius:8px;padding:12px;margin-bottom:10px;">
+                        <div style="font-size:13px;color:#aaa;margin-bottom:4px;">ID: ${p.id} ｜ ${p.scheduled_time} ｜ ${p.status}</div>
+                        <div style="margin-bottom:8px;">${p.text}</div>
+                        ${p.status === '待機中 ⏳' ? `<button class="secondary" onclick="cancelSchedule('${p.id}')" style="font-size:12px;padding:4px 10px;">キャンセル</button>` : ''}
+                    </div>
+                `).join('');
+            });
+        }
+
+        function cancelSchedule(jobId) {
+            fetch('/api/cancel-schedule/' + jobId, {method: 'POST'})
+            .then(r => r.json())
+            .then(() => loadScheduledPosts());
+        }
+    </script>
 </body>
 </html>
