@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン — X Post Generator</title>
+    <style>
+        body { background: #121212; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .box { background: #1e1e1e; padding: 40px; border-radius: 12px; width: 320px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        h2 { text-align: center; margin: 0 0 24px; font-size: 20px; }
+        label { display: block; font-size: 13px; color: #aaa; margin-bottom: 6px; }
+        input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #2a2a2a; color: #fff; font-size: 14px; box-sizing: border-box; margin-bottom: 16px; }
+        button { width: 100%; padding: 12px; background: #667eea; color: #fff; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #5a6fd6; }
+        .error { background: #3a1a1a; color: #f44336; padding: 10px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>🚀 X Post Generator</h2>
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        <form method="POST">
+            <label>メールアドレス</label>
+            <input type="text" name="username" required autofocus>
+            <label>パスワード</label>
+            <input type="password" name="password" required>
+            <button type="submit">ログイン</button>
+        </form>
+    </div>
+</body>
+</html>
