@@ -27,6 +27,10 @@ function switchTab(tab, btn) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById(`${tab}-section`).classList.add('active');
     btn.classList.add('active');
+    if (tab === 'xboost') {
+        renderCalendar();
+        loadContextInputs();
+    }
 }
 
 function loadNews() {
@@ -83,6 +87,7 @@ function postText(section) {
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
+                    recordPost();
                     showResult(`${section}-result`, `✓ 投稿完了！ <a href="${data.tweet_url}" target="_blank" style="color:#1da1f2;">Xで確認する →</a>`, 'success');
                 } else {
                     showResult(`${section}-result`, `✗ 投稿失敗: ${data.error}`, 'error');
@@ -438,3 +443,193 @@ function getSelectedCredentials(section) {
 
 // ページ読み込み時に設定を初期化
 initSettings();
+
+// ===== XBOOST機能 =====
+
+function getContext() {
+  const style = localStorage.getItem('xpost_ctx_style') || '';
+  const product = localStorage.getItem('xpost_ctx_product') || '';
+  const target = localStorage.getItem('xpost_ctx_target') || '';
+  return [style, product, target].filter(Boolean).join('\n');
+}
+
+function saveContext() {
+  const style = document.getElementById('xb-ctx-style').value.trim();
+  const product = document.getElementById('xb-ctx-product').value.trim();
+  const target = document.getElementById('xb-ctx-target').value.trim();
+  localStorage.setItem('xpost_ctx_style', style);
+  localStorage.setItem('xpost_ctx_product', product);
+  localStorage.setItem('xpost_ctx_target', target);
+  const r = document.getElementById('xb-ctx-result');
+  r.textContent = '✅ 魂を保存しました。全機能に反映されます。';
+  r.style.display = 'block';
+  setTimeout(() => r.style.display = 'none', 3000);
+}
+
+function loadContextInputs() {
+  const s = document.getElementById('xb-ctx-style');
+  const p = document.getElementById('xb-ctx-product');
+  const t = document.getElementById('xb-ctx-target');
+  if (s) s.value = localStorage.getItem('xpost_ctx_style') || '';
+  if (p) p.value = localStorage.getItem('xpost_ctx_product') || '';
+  if (t) t.value = localStorage.getItem('xpost_ctx_target') || '';
+}
+
+function copyResult(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    const btn = el.nextElementSibling;
+    if (btn) { btn.textContent = '✅ コピーしました'; setTimeout(() => btn.textContent = '📋 コピー', 2000); }
+  });
+}
+
+function xboostLongPost() {
+  const topic = document.getElementById('xb-long-topic').value.trim();
+  if (!topic) { alert('ネタを入力してください'); return; }
+  const loading = document.getElementById('xb-long-loading');
+  const result = document.getElementById('xb-long-result');
+  const copyBtn = document.getElementById('xb-long-copy-btn');
+  loading.style.display = 'block';
+  result.style.display = 'none';
+  copyBtn.style.display = 'none';
+  fetch('/api/xboost/long-post', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({topic, context: getContext()})
+  }).then(r => r.json()).then(data => {
+    loading.style.display = 'none';
+    result.textContent = data.post || data.error || 'エラーが発生しました';
+    result.style.display = 'block';
+    if (data.post) copyBtn.style.display = 'inline-block';
+  }).catch(e => {
+    loading.style.display = 'none';
+    result.textContent = 'エラー: ' + e.message;
+    result.style.display = 'block';
+  });
+}
+
+function xboostBuzz() {
+  const topic = document.getElementById('xb-buzz-topic').value.trim();
+  if (!topic) { alert('ネタを入力してください'); return; }
+  const style = document.querySelector('input[name="buzz-style"]:checked')?.value || 'list';
+  const loading = document.getElementById('xb-buzz-loading');
+  const result = document.getElementById('xb-buzz-result');
+  const copyBtn = document.getElementById('xb-buzz-copy-btn');
+  loading.style.display = 'block';
+  result.style.display = 'none';
+  copyBtn.style.display = 'none';
+  fetch('/api/xboost/buzz', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({topic, style, context: getContext()})
+  }).then(r => r.json()).then(data => {
+    loading.style.display = 'none';
+    result.textContent = data.post || data.error || 'エラーが発生しました';
+    result.style.display = 'block';
+    if (data.post) copyBtn.style.display = 'inline-block';
+  }).catch(e => {
+    loading.style.display = 'none';
+    result.textContent = 'エラー: ' + e.message;
+    result.style.display = 'block';
+  });
+}
+
+function xboostSelfQuote() {
+  const past_post = document.getElementById('xb-qr-past').value.trim();
+  if (!past_post) { alert('過去の投稿を入力してください'); return; }
+  const loading = document.getElementById('xb-qr-loading');
+  const result = document.getElementById('xb-qr-result');
+  const copyBtn = document.getElementById('xb-qr-copy-btn');
+  loading.style.display = 'block';
+  result.style.display = 'none';
+  copyBtn.style.display = 'none';
+  fetch('/api/xboost/self-quote', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({past_post, context: getContext()})
+  }).then(r => r.json()).then(data => {
+    loading.style.display = 'none';
+    result.textContent = data.post || data.error || 'エラーが発生しました';
+    result.style.display = 'block';
+    if (data.post) copyBtn.style.display = 'inline-block';
+  }).catch(e => {
+    loading.style.display = 'none';
+    result.textContent = 'エラー: ' + e.message;
+    result.style.display = 'block';
+  });
+}
+
+function xboostInspo() {
+  const theme = document.getElementById('xb-inspo-theme').value.trim();
+  const loading = document.getElementById('xb-inspo-loading');
+  const result = document.getElementById('xb-inspo-result');
+  loading.style.display = 'block';
+  result.style.display = 'none';
+  fetch('/api/xboost/inspo', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({theme})
+  }).then(r => r.json()).then(data => {
+    loading.style.display = 'none';
+    result.textContent = data.topics || data.error || 'エラーが発生しました';
+    result.style.display = 'block';
+  }).catch(e => {
+    loading.style.display = 'none';
+    result.textContent = 'エラー: ' + e.message;
+    result.style.display = 'block';
+  });
+}
+
+function xboostProfileCheck() {
+  const profile = document.getElementById('xb-prof-text').value.trim();
+  const pinned_post = document.getElementById('xb-prof-pinned').value.trim();
+  if (!profile) { alert('プロフィールを入力してください'); return; }
+  const loading = document.getElementById('xb-prof-loading');
+  const result = document.getElementById('xb-prof-result');
+  loading.style.display = 'block';
+  result.style.display = 'none';
+  fetch('/api/xboost/profile-check', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({profile, pinned_post, context: getContext()})
+  }).then(r => r.json()).then(data => {
+    loading.style.display = 'none';
+    result.textContent = data.diagnosis || data.error || 'エラーが発生しました';
+    result.style.display = 'block';
+  }).catch(e => {
+    loading.style.display = 'none';
+    result.textContent = 'エラー: ' + e.message;
+    result.style.display = 'block';
+  });
+}
+
+function recordPost() {
+  const today = new Date().toISOString().split('T')[0];
+  const cal = JSON.parse(localStorage.getItem('xpost_calendar') || '{}');
+  cal[today] = (cal[today] || 0) + 1;
+  localStorage.setItem('xpost_calendar', JSON.stringify(cal));
+}
+
+function renderCalendar() {
+  const container = document.getElementById('xb-calendar');
+  if (!container) return;
+  const cal = JSON.parse(localStorage.getItem('xpost_calendar') || '{}');
+  const today = new Date();
+  const weeks = 26;
+  let html = '<div class="cal-grid">';
+  for (let w = weeks - 1; w >= 0; w--) {
+    html += '<div class="cal-week">';
+    for (let d = 6; d >= 0; d--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - (w * 7 + d));
+      const key = date.toISOString().split('T')[0];
+      const count = cal[key] || 0;
+      const level = count === 0 ? 0 : count === 1 ? 1 : count === 2 ? 2 : 3;
+      html += `<div class="cal-day cal-level-${level}" title="${key}: ${count}件"></div>`;
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}

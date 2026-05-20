@@ -222,6 +222,79 @@ def get_news_articles(source: str) -> list:
 
     return [{"title": a['title'], "summary": '', "link": a['link']} for a in raw]
 
+def xboost_long_post(topic: str, context: str = '') -> dict:
+    ctx = f"\n\nユーザーの文体・製品情報（必ず反映）:\n{context}" if context else ''
+    prompt = (
+        f"あなたはX（旧Twitter）のアルゴリズムを熟知したプロのSNSマーケターです。"
+        f"以下のネタで「動画＋長文」形式のXポストを作成してください。{ctx}\n\n"
+        f"【厳守】\n"
+        f"1. 冒頭2行：ターゲットを特定しソリューションを提示（例：〇〇で悩む人は〇〇すべき）\n"
+        f"2. 本文：ステップ形式（3〜8ステップ）で数字付き箇条書き\n"
+        f"3. 末尾：最も重要な結論を1行\n"
+        f"4. 最終行：「▶ 動画には大きな文字でテロップを入れてください」\n"
+        f"5. 1000文字以内で完結\n\n"
+        f"【ネタ】{topic}\n\n投稿文のみ出力。"
+    )
+    result = _call_gemini(prompt)
+    return {"post": result} if result else {"post": "", "error": "生成失敗"}
+
+def xboost_buzz(topic: str, style: str = 'list', context: str = '') -> dict:
+    ctx = f"\n\nユーザーの文体・製品情報（必ず反映）:\n{context}" if context else ''
+    if style == 'target':
+        instruction = "「ターゲット＋ソリューション型」で生成。冒頭に「〇〇な人へ。〇〇することで〇〇できます」を置き、方法を3〜5個の番号リストで続ける。最後に一言まとめ。280文字以内。"
+    else:
+        instruction = "「リスト形式（ブックマーク誘発型）」で生成。タイトル行→数字付きリスト5〜8個→「保存して後で見返してください」等の締め。280文字以内。"
+    prompt = (
+        f"あなたはSNSバズのスペシャリストです。日本人がブックマークしたくなる投稿を作成してください。{ctx}\n\n"
+        f"{instruction}\n\n【ネタ】{topic}\n\n投稿文のみ出力。"
+    )
+    result = _call_gemini(prompt)
+    return {"post": result} if result else {"post": "", "error": "生成失敗"}
+
+def xboost_self_quote(past_post: str, context: str = '') -> dict:
+    ctx = f"\n\nユーザーの文体（必ず反映）:\n{context}" if context else ''
+    prompt = (
+        f"過去のバズ投稿を元に自己引用（セルフQR）するための文章を作成してください。{ctx}\n\n"
+        f"【戦略】\n"
+        f"1. 好奇心をそそり元ポストを見に行きたくなる文章\n"
+        f"2. 「最新事例を見つけました」「今の私ならこう付け加えます」等で価値を上乗せ\n"
+        f"3. 140文字以内\n\n"
+        f"【引用する過去の投稿】\n{past_post}\n\n自己引用文のみ出力。"
+    )
+    result = _call_gemini(prompt)
+    return {"post": result} if result else {"post": "", "error": "生成失敗"}
+
+def xboost_inspo(theme: str = '') -> dict:
+    base = f"テーマ：{theme}\n\n" if theme else ''
+    prompt = (
+        f"あなたはアテンション・エコノミーの専門家です。{base}"
+        f"X（旧Twitter）でインプレッションが爆発するトピックを3つ提案してください。\n\n"
+        f"各トピックの形式：\n"
+        f"【タイトル】AかBか、極論を提示する切り口\n"
+        f"【刺激要素】本能的に反応してしまう要素\n"
+        f"【昇華】前向きな解決策への変換\n"
+        f"【サンプル文】そのまま使える投稿の書き出し1〜2行\n\n"
+        f"3トピックを番号付きで出力。"
+    )
+    result = _call_gemini(prompt)
+    return {"topics": result} if result else {"topics": "", "error": "生成失敗"}
+
+def xboost_profile_check(profile: str, pinned_post: str = '', context: str = '') -> dict:
+    ctx = f"\n\nアカウントの製品・ターゲット情報:\n{context}" if context else ''
+    pinned = f"\n\n【固定ポスト】\n{pinned_post}" if pinned_post else ''
+    prompt = (
+        f"ユーザーのXプロフィールを分析しフォロー率を高める改善案を提示してください。{ctx}\n\n"
+        f"【チェック項目】\n"
+        f"1. 権威性と人間性：何者か一瞬で伝わるか\n"
+        f"2. ベネフィット：フォローで得られる良いことが明確か\n"
+        f"3. 固定ポストのフック：最強の動画＋長文になっているか\n"
+        f"4. ファネル機能：製品・サービスへの導線として機能しているか\n\n"
+        f"【現在のプロフィール】\n{profile}{pinned}\n\n"
+        f"診断結果と具体的な改善案を日本語で出力。"
+    )
+    result = _call_gemini(prompt)
+    return {"diagnosis": result} if result else {"diagnosis": "", "error": "生成失敗"}
+
 def health_check() -> dict:
     results = {"gemini": "NG", "x_api": "NG", "env_vars": "NG", "overall": "NG"}
 

@@ -21,6 +21,7 @@
             <button class="tab active" onclick="switchTab('short', this)">💬 短文投稿</button>
             <button class="tab" onclick="switchTab('news', this)">📰 ニュース投稿</button>
             <button class="tab" onclick="switchTab('settings', this)">⚙️ 設定</button>
+            <button class="tab" onclick="switchTab('xboost', this)">🚀 XBOOST</button>
         </div>
 
         <!-- 短文投稿セクション -->
@@ -183,6 +184,122 @@
                 <div style="font-size:14px;font-weight:600;color:#4caf50;margin-bottom:10px;">📄 マニュアル</div>
                 <a href="/manual/free" target="_blank" style="display:block;color:#4caf50;margin-bottom:6px;font-size:13px;">📘 基本マニュアル（無料会員）</a>
                 <a href="/manual/paid" target="_blank" style="display:block;color:#ffd700;font-size:13px;">📗 完全マニュアル（有料会員）</a>
+            </div>
+        </div>
+
+        <!-- XBOOSTセクション -->
+        <div id="xboost-section" class="section">
+            <div class="section-title">🚀 XBOOST — バズり投稿エンジン</div>
+
+            <!-- ① 動画＋長文生成 -->
+            <div class="xboost-card">
+                <div class="xboost-card-title">① 動画＋長文生成</div>
+                <p class="xboost-desc">Xプレミアムで10万インプを狙うステップ形式の長文投稿を生成します。</p>
+                <div class="form-group">
+                    <label>発信したいネタ・知見</label>
+                    <textarea id="xb-long-topic" rows="4" placeholder="例：副業で月10万円稼ぐ方法を発見しました"></textarea>
+                </div>
+                <button class="secondary" onclick="xboostLongPost()">🎬 長文生成</button>
+                <div id="xb-long-loading" class="loading-message">⏳ 生成中（30秒〜1分）...</div>
+                <div id="xb-long-result" class="result" style="white-space:pre-wrap;"></div>
+                <button id="xb-long-copy-btn" style="display:none;margin-top:8px;" class="secondary" onclick="copyResult('xb-long-result')">📋 コピー</button>
+            </div>
+
+            <!-- ② バズり構文エンジン -->
+            <div class="xboost-card">
+                <div class="xboost-card-title">② バズり構文エンジン</div>
+                <p class="xboost-desc">日本人がブックマークしたくなる構文で投稿を自動生成します。</p>
+                <div class="form-group">
+                    <label>発信したいネタ</label>
+                    <textarea id="xb-buzz-topic" rows="3" placeholder="例：節約術、筋トレ習慣、英語学習のコツ"></textarea>
+                </div>
+                <div style="display:flex;gap:10px;margin-bottom:12px;">
+                    <label style="font-size:13px;color:#aaa;"><input type="radio" name="buzz-style" value="list" checked> 📋 リスト形式（保存誘発）</label>
+                    <label style="font-size:13px;color:#aaa;"><input type="radio" name="buzz-style" value="target"> 🎯 ターゲット＋ソリューション型</label>
+                </div>
+                <button class="secondary" onclick="xboostBuzz()">⚡ バズり文を生成</button>
+                <div id="xb-buzz-loading" class="loading-message">⏳ 生成中...</div>
+                <div id="xb-buzz-result" class="result" style="white-space:pre-wrap;"></div>
+                <button id="xb-buzz-copy-btn" style="display:none;margin-top:8px;" class="secondary" onclick="copyResult('xb-buzz-result')">📋 コピー</button>
+            </div>
+
+            <!-- ③ セルフQRハック -->
+            <div class="xboost-card">
+                <div class="xboost-card-title">③ セルフQRハック（自己引用）</div>
+                <p class="xboost-desc">過去のバズ投稿を再利用し、流入を3〜10%上乗せする自己引用文を生成します。</p>
+                <div class="form-group">
+                    <label>過去のバズ投稿テキスト</label>
+                    <textarea id="xb-qr-past" rows="4" placeholder="過去にバズった投稿のテキストを貼り付けてください"></textarea>
+                </div>
+                <button class="secondary" onclick="xboostSelfQuote()">🔄 自己引用文を生成</button>
+                <div id="xb-qr-loading" class="loading-message">⏳ 生成中...</div>
+                <div id="xb-qr-result" class="result" style="white-space:pre-wrap;"></div>
+                <button id="xb-qr-copy-btn" style="display:none;margin-top:8px;" class="secondary" onclick="copyResult('xb-qr-result')">📋 コピー</button>
+            </div>
+
+            <!-- ⑤ インスポ生成 -->
+            <div class="xboost-card">
+                <div class="xboost-card-title">⑤ インスポ（ネタ）生成</div>
+                <p class="xboost-desc">インプレッションが爆発する「尖ったトピック」を3つ提案します。</p>
+                <div class="form-group">
+                    <label>テーマ（任意）</label>
+                    <input type="text" id="xb-inspo-theme" placeholder="例：副業、筋トレ、AI活用（空欄でもOK）">
+                </div>
+                <button class="secondary" onclick="xboostInspo()">💡 ネタを提案</button>
+                <div id="xb-inspo-loading" class="loading-message">⏳ 生成中...</div>
+                <div id="xb-inspo-result" class="result" style="white-space:pre-wrap;"></div>
+            </div>
+
+            <!-- ⑥ プロフ・固定ポスト診断 -->
+            <div class="xboost-card">
+                <div class="xboost-card-title">⑥ プロフ・固定ポスト診断</div>
+                <p class="xboost-desc">フォロワー転換率を高めるためのプロフィール改善案を提示します。</p>
+                <div class="form-group">
+                    <label>現在のプロフィール文</label>
+                    <textarea id="xb-prof-text" rows="3" placeholder="現在のXプロフィール文を入力してください"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>固定ポスト（任意）</label>
+                    <textarea id="xb-prof-pinned" rows="3" placeholder="固定ポストのテキストがあれば入力（任意）"></textarea>
+                </div>
+                <button class="secondary" onclick="xboostProfileCheck()">🔍 診断する</button>
+                <div id="xb-prof-loading" class="loading-message">⏳ 診断中...</div>
+                <div id="xb-prof-result" class="result" style="white-space:pre-wrap;"></div>
+            </div>
+
+            <!-- ⑦ 投稿カレンダー（草）表示 -->
+            <div class="xboost-card">
+                <div class="xboost-card-title">⑦ 投稿カレンダー（草）</div>
+                <p class="xboost-desc">投稿の継続状況を可視化します。投稿するたびに緑が濃くなります。</p>
+                <div id="xb-calendar" style="overflow-x:auto;padding:10px 0;"></div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:#888;">
+                    <span>少ない</span>
+                    <span class="cal-legend" style="background:#1a1a2e;"></span>
+                    <span class="cal-legend" style="background:#1a4a1a;"></span>
+                    <span class="cal-legend" style="background:#2d7a2d;"></span>
+                    <span class="cal-legend" style="background:#39d353;"></span>
+                    <span>多い</span>
+                </div>
+            </div>
+
+            <!-- ④ コンテキスト（魂）設定 -->
+            <div class="xboost-card">
+                <div class="xboost-card-title">④ コンテキスト（魂）設定</div>
+                <p class="xboost-desc">あなたの文体・製品情報・ターゲット読者をAIに学習させ、全機能の出力をパーソナライズします。</p>
+                <div class="form-group">
+                    <label>あなたの文体・キャラクター</label>
+                    <textarea id="xb-ctx-style" rows="3" placeholder="例：ざっくばらんで親しみやすい口調。体験談ベースで語る。専門用語は使わない。"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>製品・サービス情報</label>
+                    <textarea id="xb-ctx-product" rows="3" placeholder="例：X自動投稿ツール「X Post Generator」。月額3,980円。ターゲットは副業・個人事業主。"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>ターゲット読者</label>
+                    <input type="text" id="xb-ctx-target" placeholder="例：副業で月10万円を目指す30〜40代会社員">
+                </div>
+                <button onclick="saveContext()">💾 魂を保存</button>
+                <div id="xb-ctx-result" class="result"></div>
             </div>
         </div>
     </div>

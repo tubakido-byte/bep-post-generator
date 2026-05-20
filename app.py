@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, redirect
 import os, requests, uuid, threading
 from datetime import datetime
 import pytz
-from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles, health_check
+from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles, health_check, xboost_long_post, xboost_buzz, xboost_self_quote, xboost_inspo, xboost_profile_check
 from config import GEMINI_API_KEY
 
 app = Flask(__name__)
@@ -118,6 +118,65 @@ def api_verify_premium():
     if code == PREMIUM_CODE.upper():
         return jsonify({'valid': True})
     return jsonify({'valid': False})
+
+@app.route('/api/xboost/long-post', methods=['POST'])
+def api_xboost_long_post():
+    try:
+        data = request.get_json()
+        topic = data.get('topic', '').strip()
+        context = data.get('context', '')
+        if not topic:
+            return jsonify({'post': '', 'error': 'ネタを入力してください'})
+        return jsonify(xboost_long_post(topic, context))
+    except Exception as e:
+        return jsonify({'post': '', 'error': str(e)[:100]})
+
+@app.route('/api/xboost/buzz', methods=['POST'])
+def api_xboost_buzz():
+    try:
+        data = request.get_json()
+        topic = data.get('topic', '').strip()
+        style = data.get('style', 'list')
+        context = data.get('context', '')
+        if not topic:
+            return jsonify({'post': '', 'error': 'ネタを入力してください'})
+        return jsonify(xboost_buzz(topic, style, context))
+    except Exception as e:
+        return jsonify({'post': '', 'error': str(e)[:100]})
+
+@app.route('/api/xboost/self-quote', methods=['POST'])
+def api_xboost_self_quote():
+    try:
+        data = request.get_json()
+        past_post = data.get('past_post', '').strip()
+        context = data.get('context', '')
+        if not past_post:
+            return jsonify({'post': '', 'error': '過去の投稿を入力してください'})
+        return jsonify(xboost_self_quote(past_post, context))
+    except Exception as e:
+        return jsonify({'post': '', 'error': str(e)[:100]})
+
+@app.route('/api/xboost/inspo', methods=['POST'])
+def api_xboost_inspo():
+    try:
+        data = request.get_json()
+        theme = data.get('theme', '')
+        return jsonify(xboost_inspo(theme))
+    except Exception as e:
+        return jsonify({'topics': '', 'error': str(e)[:100]})
+
+@app.route('/api/xboost/profile-check', methods=['POST'])
+def api_xboost_profile_check():
+    try:
+        data = request.get_json()
+        profile = data.get('profile', '').strip()
+        pinned_post = data.get('pinned_post', '')
+        context = data.get('context', '')
+        if not profile:
+            return jsonify({'diagnosis': '', 'error': 'プロフィールを入力してください'})
+        return jsonify(xboost_profile_check(profile, pinned_post, context))
+    except Exception as e:
+        return jsonify({'diagnosis': '', 'error': str(e)[:100]})
 
 @app.route('/manual/free')
 def manual_free():

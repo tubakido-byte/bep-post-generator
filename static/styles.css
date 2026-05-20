@@ -216,3 +216,18 @@ button:disabled {
     color: #888;
     margin-top: 4px;
 }
+
+/* XBOOST */
+.xboost-card { background:#1a1a2e; border:1px solid #333; border-radius:10px; padding:20px; margin-bottom:20px; }
+.xboost-card-title { font-size:16px; font-weight:700; color:#7b68ee; margin-bottom:8px; }
+.xboost-desc { font-size:12px; color:#888; margin-bottom:14px; }
+
+/* 投稿カレンダー */
+.cal-grid { display:flex; gap:3px; }
+.cal-week { display:flex; flex-direction:column; gap:3px; }
+.cal-day { width:12px; height:12px; border-radius:2px; }
+.cal-level-0 { background:#1a1a2e; border:1px solid #333; }
+.cal-level-1 { background:#1a4a1a; }
+.cal-level-2 { background:#2d7a2d; }
+.cal-level-3 { background:#39d353; }
+.cal-legend { display:inline-block; width:12px; height:12px; border-radius:2px; border:1px solid #333; }
