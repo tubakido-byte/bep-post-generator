@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Post Generator 完全マニュアル（有料会員）</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+            background: #0d0d1a;
+            color: #e0e0e0;
+            line-height: 1.8;
+            padding: 20px;
+        }
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+        .badge {
+            display: inline-block;
+            background: #2a2a00;
+            color: #ffd700;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+            border: 1px solid #ffd700;
+        }
+        h1 {
+            font-size: 26px;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 36px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #333;
+        }
+        .section {
+            margin-bottom: 36px;
+        }
+        h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffd700;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        h2 .num {
+            background: #ffd700;
+            color: #000;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+        h2.free-section {
+            color: #4caf50;
+        }
+        h2.free-section .num {
+            background: #4caf50;
+        }
+        p {
+            color: #ccc;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        ul, ol {
+            padding-left: 20px;
+            margin-bottom: 10px;
+        }
+        li {
+            color: #ccc;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+        .step-list {
+            list-style: none;
+            padding-left: 0;
+            counter-reset: steps;
+        }
+        .step-list li {
+            counter-increment: steps;
+            padding: 10px 14px 10px 44px;
+            position: relative;
+            background: #1a1a2e;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .step-list li::before {
+            content: counter(steps);
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ffd700;
+            color: #000;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+        }
+        .step-list.green li::before {
+            background: #4caf50;
+        }
+        .notice-box {
+            background: #1a2a1a;
+            border: 1px solid #2a5a2a;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+        }
+        .notice-box p { color: #a5d6a7; }
+        .warn-box {
+            background: #2a1a1a;
+            border: 1px solid #5a2a2a;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+        }
+        .warn-box p { color: #ef9a9a; }
+        .premium-box {
+            background: #1a1a00;
+            border: 1px solid #ffd700;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+        }
+        .premium-box p { color: #fff9c4; }
+        .divider {
+            border: none;
+            border-top: 2px dashed #333;
+            margin: 40px 0;
+        }
+        .premium-label {
+            display: inline-block;
+            background: #2a2a00;
+            color: #ffd700;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+            border: 1px solid #ffd700;
+            vertical-align: middle;
+        }
+        code {
+            background: #1a1a2e;
+            color: #80cbc4;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: monospace;
+        }
+        .key-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        .key-list li {
+            padding: 8px 14px;
+            background: #1a1a2e;
+            border-left: 3px solid #ffd700;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 8px;
+        }
+        .back-link {
+            display: inline-block;
+            color: #888;
+            font-size: 13px;
+            text-decoration: none;
+            margin-bottom: 24px;
+        }
+        .back-link:hover { color: #ccc; }
+
+        @media print {
+            body { background: #fff; color: #000; }
+            .container { padding: 10px; }
+            h1 { color: #000; }
+            h2 { color: #f57f17; }
+            h2.free-section { color: #2e7d32; }
+            p, li { color: #333; }
+            .step-list li { background: #f5f5f5; }
+            .step-list li::before { background: #f57f17; }
+            .step-list.green li::before { background: #2e7d32; }
+            .notice-box { background: #e8f5e9; border-color: #4caf50; }
+            .notice-box p { color: #2e7d32; }
+            .warn-box { background: #fbe9e7; border-color: #e53935; }
+            .warn-box p { color: #b71c1c; }
+            .premium-box { background: #fffde7; border-color: #f9a825; }
+            .premium-box p { color: #333; }
+            .badge { background: #fffde7; color: #f57f17; border-color: #f57f17; }
+            .premium-label { background: #fffde7; color: #f57f17; border-color: #f57f17; }
+            .key-list li { background: #f5f5f5; border-left-color: #f57f17; }
+            code { background: #f5f5f5; color: #00695c; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="back-link" href="/">← ダッシュボードに戻る</a>
+
+        <div class="badge">PREMIUM PLAN</div>
+        <h1>X Post Generator 完全マニュアル</h1>
+        <p class="subtitle">有料会員・プレミアム版 ／ 最終更新：2026-05-20</p>
+
+        <!-- 無料会員と同じ基本説明 -->
+        <div class="section">
+            <h2 class="free-section"><span class="num">1</span>X Post Generatorとは</h2>
+            <p>X（Twitter）への投稿をAIで自動生成・投稿できるツールです。</p>
+            <ul>
+                <li>ニュースを選んで意見を書くだけでAIが投稿文を3パターン生成</li>
+                <li>画像も3種類自動生成（Gemini AIによる高品質画像）</li>
+                <li>予約投稿で指定時刻に自動投稿</li>
+                <li><strong>【有料限定】複数Xアカウントの登録・切り替え投稿</strong></li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2 class="free-section"><span class="num">2</span>アクセス方法</h2>
+            <ul>
+                <li>ins-japan.comの会員ページからアクセス</li>
+                <li>ブラウザに自動で記録されます（毎回ログイン不要）</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2 class="free-section"><span class="num">3</span>短文投稿の使い方</h2>
+            <ol class="step-list green">
+                <li>「💬 短文投稿」タブを選ぶ</li>
+                <li>テキストを入力して「🤖 AI生成」で3パターン生成</li>
+                <li>気に入ったパターンをクリックして選択</li>
+                <li>「🖼️ 画像生成（3種類）」で3種類の画像を生成</li>
+                <li>画像を1枚選んで「📤 選択した画像でX投稿」をクリック</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h2 class="free-section"><span class="num">4</span>ニュース投稿の使い方</h2>
+            <ol class="step-list green">
+                <li>「📰 ニュース投稿」タブを選ぶ</li>
+                <li>ニュースソースを選んで「📰 ニュース取得」をクリック</li>
+                <li>気になる記事を選ぶ</li>
+                <li>自分の意見を入力して「🤖 AI生成」をクリック</li>
+                <li>投稿パターンを選んで画像生成・投稿</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h2 class="free-section"><span class="num">5</span>予約投稿の使い方</h2>
+            <ol class="step-list green">
+                <li>投稿ボタンの上の「⏰ 予約時刻」に日時を入力</li>
+                <li>空欄のまま投稿 → 今すぐ投稿</li>
+                <li>日時を入力して投稿 → 指定時刻に自動投稿</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h2 class="free-section"><span class="num">6</span>よくある質問</h2>
+            <ul>
+                <li><strong>AI生成に時間がかかる</strong>：1〜2分程度かかることがあります。そのままお待ちください。</li>
+                <li><strong>画像生成に失敗する</strong>：Gemini APIの一時的な制限の場合があります。再度お試しください。</li>
+                <li><strong>投稿に失敗する</strong>：X APIの制限の可能性があります。時間をおいてお試しください。</li>
+            </ul>
+        </div>
+
+        <hr class="divider">
+        <p style="color:#ffd700;font-weight:700;font-size:15px;margin-bottom:24px;">以下は有料会員（プレミアム）専用の機能です <span class="premium-label">PREMIUM</span></p>
+
+        <div class="section">
+            <h2><span class="num">7</span>プレミアムコードの認証方法</h2>
+            <div class="premium-box">
+                <p>有料会員登録完了時に自動送信されるメールにプレミアムコードが記載されています。</p>
+            </div>
+            <ol class="step-list">
+                <li>「⚙️ 設定」タブを開く</li>
+                <li>有料会員登録時にメールで届いたプレミアムコードを入力</li>
+                <li>「🔑 認証する」をクリック</li>
+                <li>「✅ プレミアムプラン」と表示されれば認証完了</li>
+            </ol>
+            <div class="notice-box">
+                <p>プレミアムコードの認証状態はブラウザのlocalStorageに保存されます。ブラウザのキャッシュをクリアした場合は再認証が必要です。</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2><span class="num">8</span>X APIキーの取得方法</h2>
+            <ol class="step-list">
+                <li><a href="https://developer.x.com" target="_blank" style="color:#ffd700;">https://developer.x.com</a> にアクセス</li>
+                <li>「Developer Portal」にXアカウントでログイン</li>
+                <li>「Projects &amp; Apps」→「New App」で新しいアプリを作成</li>
+                <li>「Keys and tokens」タブで以下の4つを取得：</li>
+            </ol>
+            <ul class="key-list">
+                <li>① <strong>API Key（Consumer Key）</strong></li>
+                <li>② <strong>API Key Secret（Consumer Secret）</strong></li>
+                <li>③ <strong>Access Token</strong></li>
+                <li>④ <strong>Access Token Secret</strong></li>
+            </ul>
+            <div class="warn-box">
+                <p>アクセス権限は必ず「Read and Write」に設定してください。「Read only」では投稿できません。</p>
+            </div>
+            <div class="notice-box">
+                <p>X Developer Portalの登録は無料です。ただし、利用規約への同意が必要です。</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2><span class="num">9</span>複数アカウントの登録方法</h2>
+            <ol class="step-list">
+                <li>「⚙️ 設定」タブを開く</li>
+                <li>「➕ アカウントを追加」セクションへスクロール</li>
+                <li>アカウント名を入力（例：メインアカウント・副業アカウント）</li>
+                <li>取得した4つのAPIキーをそれぞれのフィールドに貼り付け</li>
+                <li>「💾 アカウントを保存」をクリック</li>
+                <li>複数アカウントを繰り返し登録できます</li>
+            </ol>
+            <div class="warn-box">
+                <p>APIキーはブラウザのlocalStorageに保存されます。サーバーには送信されません。<br>ブラウザのキャッシュをクリアするとアカウント情報が消えます（再登録が必要）。</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2><span class="num">10</span>投稿アカウントの切り替え方法</h2>
+            <ol class="step-list">
+                <li>2つ以上のアカウントを登録すると、投稿セクションに「📱 投稿アカウント」が表示されます</li>
+                <li>プルダウンから投稿したいアカウントを選択</li>
+                <li>「デフォルトアカウント（サービス設定）」はサービス標準アカウント</li>
+                <li>投稿ごとに異なるアカウントを選択可能</li>
+            </ol>
+            <div class="notice-box">
+                <p>アカウント選択はセッション内で有効です。ページを再読み込みしても選択したアカウントは保持されます。</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2><span class="num">11</span>セキュリティについて</h2>
+            <ul>
+                <li>APIキーはあなたのブラウザのlocalStorageにのみ保存されます</li>
+                <li>サーバーへの送信は投稿時のみ（HTTPS暗号化通信）</li>
+                <li>サーバー側にAPIキーは記録・保存されません</li>
+            </ul>
+            <div class="warn-box">
+                <p>注意事項：<br>
+                ・APIキーは他人に見せないでください<br>
+                ・共有PCでは使用しないでください<br>
+                ・ブラウザのキャッシュをクリアするとアカウント情報が消えます（再登録が必要）<br>
+                ・不正アクセスが疑われる場合はX Developer Portalでキーを再生成してください</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

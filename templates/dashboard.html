@@ -20,6 +20,7 @@
         <div class="header">
             <button class="tab active" onclick="switchTab('short', this)">💬 短文投稿</button>
             <button class="tab" onclick="switchTab('news', this)">📰 ニュース投稿</button>
+            <button class="tab" onclick="switchTab('settings', this)">⚙️ 設定</button>
         </div>
 
         <!-- 短文投稿セクション -->
@@ -29,6 +30,10 @@
                 <label>あなたの投稿内容</label>
                 <textarea id="short-text" placeholder="投稿したいテキストを入力してください（最大280文字）" rows="6"></textarea>
                 <div class="char-count"><span id="short-count">0</span> / 280文字</div>
+            </div>
+            <div id="short-account-row" style="display:none;margin-bottom:8px;">
+                <label style="font-size:12px;color:#aaa;">📱 投稿アカウント</label>
+                <select id="short-account-select" style="width:100%;padding:8px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;"></select>
             </div>
             <div class="schedule-row">
                 <input type="datetime-local" id="short-schedule-time">
@@ -89,6 +94,10 @@
                     <textarea id="opinion-text" placeholder="この記事についてのあなたの考えを入力してください（最大280文字）" rows="4"></textarea>
                     <div class="char-count"><span id="opinion-count">0</span> / 280文字</div>
                 </div>
+                <div id="news-account-row" style="display:none;margin-bottom:8px;">
+                    <label style="font-size:12px;color:#aaa;">📱 投稿アカウント</label>
+                    <select id="news-account-select" style="width:100%;padding:8px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;"></select>
+                </div>
                 <div class="schedule-row">
                     <input type="datetime-local" id="news-schedule-time">
                     <span class="schedule-hint">⏰ 空欄 = 今すぐ投稿 ／ 日時入力 = 予約投稿</span>
@@ -114,6 +123,66 @@
                 <div id="news-image-list" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;"></div>
                 <button id="news-post-with-image-btn" style="margin-top:15px;display:none;" onclick="postWithImage('news')">📤 選択した画像でX投稿</button>
                 <div id="news-image-result" class="result"></div>
+            </div>
+        </div>
+        <!-- 設定セクション -->
+        <div id="settings-section" class="section">
+            <div class="section-title">⚙️ アカウント設定</div>
+
+            <!-- プレミアムコード -->
+            <div style="background:#1a1a2e;border:1px solid #333;border-radius:10px;padding:20px;margin-bottom:20px;">
+                <div style="font-size:16px;font-weight:600;margin-bottom:12px;">🔑 プレミアムコード認証</div>
+                <div id="premium-status" style="padding:8px 14px;border-radius:20px;display:inline-block;font-size:13px;font-weight:600;background:#2a1a1a;color:#ff6b6b;margin-bottom:14px;">🔒 無料プラン（1アカウントのみ）</div>
+                <div id="premium-input-area">
+                    <div class="form-group">
+                        <label>プレミアムコード</label>
+                        <input type="text" id="premium-code-input" placeholder="例：XXXX-XXXX-XXXX" style="letter-spacing:2px;">
+                    </div>
+                    <button onclick="verifyPremium()">🔑 認証する</button>
+                </div>
+                <button id="reset-premium-btn" class="secondary" style="display:none;margin-top:8px;" onclick="resetPremium()">🔓 プレミアムを解除</button>
+                <div id="premium-result" class="result"></div>
+            </div>
+
+            <!-- マルチアカウント管理（プレミアム時のみ表示） -->
+            <div id="account-management" style="display:none;">
+                <div style="background:#1a1a2e;border:1px solid #333;border-radius:10px;padding:20px;margin-bottom:20px;">
+                    <div style="font-size:16px;font-weight:600;margin-bottom:16px;">➕ アカウントを追加</div>
+                    <div class="form-group">
+                        <label>アカウント名（例：メインアカウント）</label>
+                        <input type="text" id="account-name" placeholder="わかりやすい名前">
+                    </div>
+                    <div class="form-group">
+                        <label>API Key（Consumer Key）</label>
+                        <input type="password" id="account-ck" placeholder="Consumer Key">
+                    </div>
+                    <div class="form-group">
+                        <label>API Secret（Consumer Secret）</label>
+                        <input type="password" id="account-cs" placeholder="Consumer Secret">
+                    </div>
+                    <div class="form-group">
+                        <label>Access Token</label>
+                        <input type="password" id="account-at" placeholder="Access Token">
+                    </div>
+                    <div class="form-group">
+                        <label>Access Token Secret</label>
+                        <input type="password" id="account-ats" placeholder="Access Token Secret">
+                    </div>
+                    <button onclick="addAccount()">💾 アカウントを保存</button>
+                    <div id="account-add-result" class="result"></div>
+                </div>
+
+                <div style="background:#1a1a2e;border:1px solid #333;border-radius:10px;padding:20px;">
+                    <div style="font-size:16px;font-weight:600;margin-bottom:12px;">📋 登録済みアカウント</div>
+                    <div id="account-list"></div>
+                </div>
+            </div>
+
+            <!-- マニュアルリンク -->
+            <div style="margin-top:24px;padding:16px;background:#0d2a0d;border:1px solid #2a5a2a;border-radius:10px;">
+                <div style="font-size:14px;font-weight:600;color:#4caf50;margin-bottom:10px;">📄 マニュアル</div>
+                <a href="/manual/free" target="_blank" style="display:block;color:#4caf50;margin-bottom:6px;font-size:13px;">📘 基本マニュアル（無料会員）</a>
+                <a href="/manual/paid" target="_blank" style="display:block;color:#ffd700;font-size:13px;">📗 完全マニュアル（有料会員）</a>
             </div>
         </div>
     </div>

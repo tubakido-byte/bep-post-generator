@@ -8,8 +8,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from requests_oauthlib import OAuth1
 from config import X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, GEMINI_API_KEY, NEWS_SOURCES
 
-def post_to_x(text: str, image_b64: str = None) -> dict:
-    auth = OAuth1(X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET)
+def post_to_x(text: str, image_b64: str = None, credentials: dict = None) -> dict:
+    if credentials and all(credentials.get(k) for k in ['ck','cs','at','ats']):
+        ck = credentials['ck']; cs = credentials['cs']
+        at = credentials['at']; ats = credentials['ats']
+    else:
+        ck, cs, at, ats = X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET
+    auth = OAuth1(ck, cs, at, ats)
     try:
         media_ids = []
         if image_b64:

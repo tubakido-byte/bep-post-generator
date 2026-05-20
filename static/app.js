@@ -66,8 +66,9 @@ function postText(section) {
     if (section === 'news' && !selectedArticle) { showResult('news-result', '記事を選択してください', 'error'); return; }
     const scheduleEl = document.getElementById(`${section}-schedule-time`);
     const scheduleTime = scheduleEl ? scheduleEl.value : '';
+    const credentials = getSelectedCredentials(section);
     if (scheduleTime) {
-        fetch('/api/schedule', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, scheduled_time: scheduleTime})})
+        fetch('/api/schedule', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, scheduled_time: scheduleTime, credentials})})
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
@@ -78,7 +79,7 @@ function postText(section) {
                 }
             });
     } else {
-        fetch('/api/post', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text})})
+        fetch('/api/post', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, credentials})})
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
@@ -274,8 +275,9 @@ function postWithImage(section) {
     if (!image) return;
     const scheduleEl = document.getElementById(`${section}-schedule-time`);
     const scheduleTime = scheduleEl ? scheduleEl.value : '';
+    const credentials = getSelectedCredentials(section);
     if (scheduleTime) {
-        fetch('/api/schedule', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, image, scheduled_time: scheduleTime})})
+        fetch('/api/schedule', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, image, scheduled_time: scheduleTime, credentials})})
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
@@ -286,7 +288,7 @@ function postWithImage(section) {
                 }
             });
     } else {
-        fetch('/api/post', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, image})})
+        fetch('/api/post', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, image, credentials})})
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
@@ -303,3 +305,136 @@ function showResult(id, msg, type) {
     el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><span>${msg}</span><button onclick="this.parentElement.parentElement.style.display='none'" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:18px;padding:0 10px;">×</button></div>`;
     el.className = `result ${type}`;
 }
+
+// ===== プレミアム＆マルチアカウント管理 =====
+
+function initSettings() {
+    const isPremium = localStorage.getItem('xpost_premium') === 'true';
+    updatePremiumUI(isPremium);
+    if (isPremium) renderAccountList();
+    updateAccountSelectors();
+}
+
+function verifyPremium() {
+    const code = document.getElementById('premium-code-input').value.trim();
+    if (!code) return;
+    fetch('/api/verify-premium', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({code})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.valid) {
+            localStorage.setItem('xpost_premium', 'true');
+            updatePremiumUI(true);
+            showResult('premium-result', '✅ プレミアム認証完了！複数アカウント機能が使えます', 'success');
+        } else {
+            showResult('premium-result', '❌ コードが正しくありません。有料会員登録メールをご確認ください', 'error');
+        }
+    });
+}
+
+function resetPremium() {
+    localStorage.removeItem('xpost_premium');
+    localStorage.removeItem('xpost_accounts');
+    updatePremiumUI(false);
+    updateAccountSelectors();
+}
+
+function updatePremiumUI(isPremium) {
+    const status = document.getElementById('premium-status');
+    const mgmt = document.getElementById('account-management');
+    const resetBtn = document.getElementById('reset-premium-btn');
+    const inputArea = document.getElementById('premium-input-area');
+    if (!status) return;
+    if (isPremium) {
+        status.textContent = '✅ プレミアムプラン（複数アカウント対応）';
+        status.style.cssText = 'padding:8px 14px;border-radius:20px;display:inline-block;font-size:13px;font-weight:600;background:#0d2a0d;color:#4caf50;margin-bottom:14px;';
+        mgmt.style.display = 'block';
+        resetBtn.style.display = 'inline-block';
+        inputArea.style.display = 'none';
+    } else {
+        status.textContent = '🔒 無料プラン（1アカウントのみ）';
+        status.style.cssText = 'padding:8px 14px;border-radius:20px;display:inline-block;font-size:13px;font-weight:600;background:#2a1a1a;color:#ff6b6b;margin-bottom:14px;';
+        mgmt.style.display = 'none';
+        resetBtn.style.display = 'none';
+        inputArea.style.display = 'block';
+    }
+}
+
+function getAccounts() {
+    try { return JSON.parse(localStorage.getItem('xpost_accounts') || '[]'); } catch { return []; }
+}
+
+function addAccount() {
+    const name = document.getElementById('account-name').value.trim();
+    const ck = document.getElementById('account-ck').value.trim();
+    const cs = document.getElementById('account-cs').value.trim();
+    const at = document.getElementById('account-at').value.trim();
+    const ats = document.getElementById('account-ats').value.trim();
+    if (!name || !ck || !cs || !at || !ats) {
+        showResult('account-add-result', '❌ すべての項目を入力してください', 'error'); return;
+    }
+    const accounts = getAccounts();
+    accounts.push({name, ck, cs, at, ats, id: Date.now()});
+    localStorage.setItem('xpost_accounts', JSON.stringify(accounts));
+    ['account-name','account-ck','account-cs','account-at','account-ats'].forEach(id => document.getElementById(id).value = '');
+    showResult('account-add-result', `✅ 「${name}」を登録しました`, 'success');
+    renderAccountList();
+    updateAccountSelectors();
+}
+
+function removeAccount(id) {
+    const accounts = getAccounts().filter(a => a.id !== id);
+    localStorage.setItem('xpost_accounts', JSON.stringify(accounts));
+    renderAccountList();
+    updateAccountSelectors();
+}
+
+function renderAccountList() {
+    const accounts = getAccounts();
+    const el = document.getElementById('account-list');
+    if (!el) return;
+    if (!accounts.length) {
+        el.innerHTML = '<p style="color:#aaa;font-size:13px;">まだアカウントが登録されていません</p>'; return;
+    }
+    el.innerHTML = accounts.map(a => `
+        <div style="background:#0d0d1a;border:1px solid #333;border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <div style="font-weight:600;">📱 ${a.name}</div>
+                <div style="font-size:11px;color:#888;margin-top:2px;">CK: ${a.ck.substring(0,10)}...</div>
+            </div>
+            <button class="secondary" onclick="removeAccount(${a.id})" style="font-size:12px;padding:4px 10px;">削除</button>
+        </div>
+    `).join('');
+}
+
+function updateAccountSelectors() {
+    const accounts = getAccounts();
+    const isPremium = localStorage.getItem('xpost_premium') === 'true';
+    ['short','news'].forEach(section => {
+        const row = document.getElementById(`${section}-account-row`);
+        const select = document.getElementById(`${section}-account-select`);
+        if (!row || !select) return;
+        if (isPremium && accounts.length > 1) {
+            row.style.display = 'block';
+            select.innerHTML = '<option value="">デフォルトアカウント（サービス設定）</option>' +
+                accounts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function getSelectedCredentials(section) {
+    if (localStorage.getItem('xpost_premium') !== 'true') return null;
+    const select = document.getElementById(`${section}-account-select`);
+    if (!select || !select.value) return null;
+    const id = parseInt(select.value);
+    const account = getAccounts().find(a => a.id === id);
+    return account ? {ck: account.ck, cs: account.cs, at: account.at, ats: account.ats} : null;
+}
+
+// ページ読み込み時に設定を初期化
+initSettings();

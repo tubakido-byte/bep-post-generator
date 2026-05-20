@@ -7,13 +7,14 @@ from config import GEMINI_API_KEY
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'xpost-secret-2024')
+PREMIUM_CODE = os.environ.get('PREMIUM_CODE', 'XPOST-PRO-2024')
 
 _jst = pytz.timezone('Asia/Tokyo')
 scheduled_posts = {}
 _timers = {}
 
-def _execute_scheduled_post(job_id, text, image=''):
-    result = post_to_x(text, image)
+def _execute_scheduled_post(job_id, text, image='', credentials=None):
+    result = post_to_x(text, image, credentials)
     if job_id in scheduled_posts:
         scheduled_posts[job_id]['status'] = '投稿済み ✅' if result.get('success') else '失敗 ❌'
     _timers.pop(job_id, None)
@@ -44,7 +45,8 @@ def api_post():
     data = request.get_json()
     if not data or not data.get('text', '').strip():
         return jsonify({'success': False, 'error': '投稿テキストが空です'})
-    return jsonify(post_to_x(data.get('text', ''), data.get('image', '')))
+    credentials = data.get('credentials')
+    return jsonify(post_to_x(data.get('text', ''), data.get('image', ''), credentials))
 
 @app.route('/api/generate', methods=['POST'])
 def api_generate():
@@ -83,8 +85,9 @@ def api_schedule():
             return jsonify({'success': False, 'error': '過去の日時は指定できません'})
     except ValueError:
         return jsonify({'success': False, 'error': '日時フォーマットエラー'})
+    credentials = data.get('credentials')
     job_id = str(uuid.uuid4())[:8]
-    timer = threading.Timer(delay, _execute_scheduled_post, args=[job_id, text, image])
+    timer = threading.Timer(delay, _execute_scheduled_post, args=[job_id, text, image, credentials])
     timer.daemon = True
     timer.start()
     _timers[job_id] = timer
@@ -108,6 +111,21 @@ def api_cancel_schedule(job_id):
     if job_id in scheduled_posts:
         scheduled_posts[job_id]['status'] = 'キャンセル ❌'
     return jsonify({'success': True})
+
+@app.route('/api/verify-premium', methods=['POST'])
+def api_verify_premium():
+    code = request.get_json().get('code', '').strip().upper()
+    if code == PREMIUM_CODE.upper():
+        return jsonify({'valid': True})
+    return jsonify({'valid': False})
+
+@app.route('/manual/free')
+def manual_free():
+    return render_template('manual_free.html')
+
+@app.route('/manual/paid')
+def manual_paid():
+    return render_template('manual_paid.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
