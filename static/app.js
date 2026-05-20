@@ -27,7 +27,7 @@ function switchTab(tab, btn) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById(`${tab}-section`).classList.add('active');
     btn.classList.add('active');
-    if (tab === 'xboost') {
+    if (tab === 'surge') {
         renderCalendar();
         loadContextInputs();
     }
@@ -444,7 +444,7 @@ function getSelectedCredentials(section) {
 // ページ読み込み時に設定を初期化
 initSettings();
 
-// ===== XBOOST機能 =====
+// ===== SURGE機能 =====
 
 function getContext() {
   const style = localStorage.getItem('xpost_ctx_style') || '';
@@ -454,22 +454,22 @@ function getContext() {
 }
 
 function saveContext() {
-  const style = document.getElementById('xb-ctx-style').value.trim();
-  const product = document.getElementById('xb-ctx-product').value.trim();
-  const target = document.getElementById('xb-ctx-target').value.trim();
+  const style = document.getElementById('sg-ctx-style').value.trim();
+  const product = document.getElementById('sg-ctx-product').value.trim();
+  const target = document.getElementById('sg-ctx-target').value.trim();
   localStorage.setItem('xpost_ctx_style', style);
   localStorage.setItem('xpost_ctx_product', product);
   localStorage.setItem('xpost_ctx_target', target);
-  const r = document.getElementById('xb-ctx-result');
+  const r = document.getElementById('sg-ctx-result');
   r.textContent = '✅ 魂を保存しました。全機能に反映されます。';
   r.style.display = 'block';
   setTimeout(() => r.style.display = 'none', 3000);
 }
 
 function loadContextInputs() {
-  const s = document.getElementById('xb-ctx-style');
-  const p = document.getElementById('xb-ctx-product');
-  const t = document.getElementById('xb-ctx-target');
+  const s = document.getElementById('sg-ctx-style');
+  const p = document.getElementById('sg-ctx-product');
+  const t = document.getElementById('sg-ctx-target');
   if (s) s.value = localStorage.getItem('xpost_ctx_style') || '';
   if (p) p.value = localStorage.getItem('xpost_ctx_product') || '';
   if (t) t.value = localStorage.getItem('xpost_ctx_target') || '';
@@ -484,16 +484,16 @@ function copyResult(id) {
   });
 }
 
-function xboostLongPost() {
-  const topic = document.getElementById('xb-long-topic').value.trim();
+function surgeLongPost() {
+  const topic = document.getElementById('sg-long-topic').value.trim();
   if (!topic) { alert('ネタを入力してください'); return; }
-  const loading = document.getElementById('xb-long-loading');
-  const result = document.getElementById('xb-long-result');
-  const copyBtn = document.getElementById('xb-long-copy-btn');
+  const loading = document.getElementById('sg-long-loading');
+  const result = document.getElementById('sg-long-result');
+  const copyBtn = document.getElementById('sg-long-copy-btn');
   loading.style.display = 'block';
   result.style.display = 'none';
   copyBtn.style.display = 'none';
-  fetch('/api/xboost/long-post', {
+  fetch('/api/surge/long-post', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({topic, context: getContext()})
@@ -509,17 +509,17 @@ function xboostLongPost() {
   });
 }
 
-function xboostBuzz() {
-  const topic = document.getElementById('xb-buzz-topic').value.trim();
+function surgeBuzz() {
+  const topic = document.getElementById('sg-buzz-topic').value.trim();
   if (!topic) { alert('ネタを入力してください'); return; }
   const style = document.querySelector('input[name="buzz-style"]:checked')?.value || 'list';
-  const loading = document.getElementById('xb-buzz-loading');
-  const result = document.getElementById('xb-buzz-result');
-  const copyBtn = document.getElementById('xb-buzz-copy-btn');
+  const loading = document.getElementById('sg-buzz-loading');
+  const result = document.getElementById('sg-buzz-result');
+  const copyBtn = document.getElementById('sg-buzz-copy-btn');
   loading.style.display = 'block';
   result.style.display = 'none';
   copyBtn.style.display = 'none';
-  fetch('/api/xboost/buzz', {
+  fetch('/api/surge/buzz', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({topic, style, context: getContext()})
@@ -535,16 +535,16 @@ function xboostBuzz() {
   });
 }
 
-function xboostSelfQuote() {
-  const past_post = document.getElementById('xb-qr-past').value.trim();
+function surgeSelfQuote() {
+  const past_post = document.getElementById('sg-qr-past').value.trim();
   if (!past_post) { alert('過去の投稿を入力してください'); return; }
-  const loading = document.getElementById('xb-qr-loading');
-  const result = document.getElementById('xb-qr-result');
-  const copyBtn = document.getElementById('xb-qr-copy-btn');
+  const loading = document.getElementById('sg-qr-loading');
+  const result = document.getElementById('sg-qr-result');
+  const copyBtn = document.getElementById('sg-qr-copy-btn');
   loading.style.display = 'block';
   result.style.display = 'none';
   copyBtn.style.display = 'none';
-  fetch('/api/xboost/self-quote', {
+  fetch('/api/surge/self-quote', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({past_post, context: getContext()})
@@ -560,13 +560,13 @@ function xboostSelfQuote() {
   });
 }
 
-function xboostInspo() {
-  const theme = document.getElementById('xb-inspo-theme').value.trim();
-  const loading = document.getElementById('xb-inspo-loading');
-  const result = document.getElementById('xb-inspo-result');
+function surgeInspo() {
+  const theme = document.getElementById('sg-inspo-theme').value.trim();
+  const loading = document.getElementById('sg-inspo-loading');
+  const result = document.getElementById('sg-inspo-result');
   loading.style.display = 'block';
   result.style.display = 'none';
-  fetch('/api/xboost/inspo', {
+  fetch('/api/surge/inspo', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({theme})
@@ -581,15 +581,15 @@ function xboostInspo() {
   });
 }
 
-function xboostProfileCheck() {
-  const profile = document.getElementById('xb-prof-text').value.trim();
-  const pinned_post = document.getElementById('xb-prof-pinned').value.trim();
+function surgeProfileCheck() {
+  const profile = document.getElementById('sg-prof-text').value.trim();
+  const pinned_post = document.getElementById('sg-prof-pinned').value.trim();
   if (!profile) { alert('プロフィールを入力してください'); return; }
-  const loading = document.getElementById('xb-prof-loading');
-  const result = document.getElementById('xb-prof-result');
+  const loading = document.getElementById('sg-prof-loading');
+  const result = document.getElementById('sg-prof-result');
   loading.style.display = 'block';
   result.style.display = 'none';
-  fetch('/api/xboost/profile-check', {
+  fetch('/api/surge/profile-check', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({profile, pinned_post, context: getContext()})
@@ -612,7 +612,7 @@ function recordPost() {
 }
 
 function renderCalendar() {
-  const container = document.getElementById('xb-calendar');
+  const container = document.getElementById('sg-calendar');
   if (!container) return;
   const cal = JSON.parse(localStorage.getItem('xpost_calendar') || '{}');
   const today = new Date();

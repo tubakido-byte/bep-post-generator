@@ -222,7 +222,7 @@ def get_news_articles(source: str) -> list:
 
     return [{"title": a['title'], "summary": '', "link": a['link']} for a in raw]
 
-def xboost_long_post(topic: str, context: str = '') -> dict:
+def surge_long_post(topic: str, context: str = '') -> dict:
     ctx = f"\n\nユーザーの文体・製品情報（必ず反映）:\n{context}" if context else ''
     prompt = (
         f"あなたはX（旧Twitter）のアルゴリズムを熟知したプロのSNSマーケターです。"
@@ -238,7 +238,7 @@ def xboost_long_post(topic: str, context: str = '') -> dict:
     result = _call_gemini(prompt)
     return {"post": result} if result else {"post": "", "error": "生成失敗"}
 
-def xboost_buzz(topic: str, style: str = 'list', context: str = '') -> dict:
+def surge_buzz(topic: str, style: str = 'list', context: str = '') -> dict:
     ctx = f"\n\nユーザーの文体・製品情報（必ず反映）:\n{context}" if context else ''
     if style == 'target':
         instruction = "「ターゲット＋ソリューション型」で生成。冒頭に「〇〇な人へ。〇〇することで〇〇できます」を置き、方法を3〜5個の番号リストで続ける。最後に一言まとめ。280文字以内。"
@@ -251,7 +251,7 @@ def xboost_buzz(topic: str, style: str = 'list', context: str = '') -> dict:
     result = _call_gemini(prompt)
     return {"post": result} if result else {"post": "", "error": "生成失敗"}
 
-def xboost_self_quote(past_post: str, context: str = '') -> dict:
+def surge_self_quote(past_post: str, context: str = '') -> dict:
     ctx = f"\n\nユーザーの文体（必ず反映）:\n{context}" if context else ''
     prompt = (
         f"過去のバズ投稿を元に自己引用（セルフQR）するための文章を作成してください。{ctx}\n\n"
@@ -264,7 +264,7 @@ def xboost_self_quote(past_post: str, context: str = '') -> dict:
     result = _call_gemini(prompt)
     return {"post": result} if result else {"post": "", "error": "生成失敗"}
 
-def xboost_inspo(theme: str = '') -> dict:
+def surge_inspo(theme: str = '') -> dict:
     base = f"テーマ：{theme}\n\n" if theme else ''
     prompt = (
         f"あなたはアテンション・エコノミーの専門家です。{base}"
@@ -279,7 +279,7 @@ def xboost_inspo(theme: str = '') -> dict:
     result = _call_gemini(prompt)
     return {"topics": result} if result else {"topics": "", "error": "生成失敗"}
 
-def xboost_profile_check(profile: str, pinned_post: str = '', context: str = '') -> dict:
+def surge_profile_check(profile: str, pinned_post: str = '', context: str = '') -> dict:
     ctx = f"\n\nアカウントの製品・ターゲット情報:\n{context}" if context else ''
     pinned = f"\n\n【固定ポスト】\n{pinned_post}" if pinned_post else ''
     prompt = (
