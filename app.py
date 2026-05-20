@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect
 import os, requests, uuid, threading
 from datetime import datetime
 import pytz
@@ -18,30 +18,12 @@ def _execute_scheduled_post(job_id, text):
         scheduled_posts[job_id]['status'] = '投稿済み ✅' if result.get('success') else '失敗 ❌'
     _timers.pop(job_id, None)
 
-APP_USERNAME = os.environ.get('APP_USERNAME', 'admin')
-APP_PASSWORD = os.environ.get('APP_PASSWORD', 'xpost2024')
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    error = None
-    if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '').strip()
-        if username == APP_USERNAME and password == APP_PASSWORD:
-            session['logged_in'] = True
-            return redirect(url_for('dashboard'))
-        error = 'メールアドレスまたはパスワードが違います'
-    return render_template('login.html', error=error)
-
 @app.route('/logout')
 def logout():
-    session.clear()
     return redirect('https://www.ins-japan.com/')
 
 @app.route('/')
 def dashboard():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
     return render_template('dashboard.html')
 
 @app.route('/api/health')
@@ -88,8 +70,6 @@ def api_generate_images():
 
 @app.route('/api/schedule', methods=['POST'])
 def api_schedule():
-    if not session.get('logged_in'):
-        return jsonify({'success': False, 'error': '未ログイン'})
     data = request.get_json()
     text = data.get('text', '').strip()
     scheduled_time_str = data.get('scheduled_time', '')
@@ -117,14 +97,10 @@ def api_schedule():
 
 @app.route('/api/scheduled-posts')
 def api_scheduled_posts():
-    if not session.get('logged_in'):
-        return jsonify({'posts': []})
     return jsonify({'posts': [{'id': k, **v} for k, v in scheduled_posts.items()]})
 
 @app.route('/api/cancel-schedule/<job_id>', methods=['POST'])
 def api_cancel_schedule(job_id):
-    if not session.get('logged_in'):
-        return jsonify({'success': False})
     timer = _timers.pop(job_id, None)
     if timer:
         timer.cancel()
