@@ -12,8 +12,8 @@ _jst = pytz.timezone('Asia/Tokyo')
 scheduled_posts = {}
 _timers = {}
 
-def _execute_scheduled_post(job_id, text):
-    result = post_to_x(text, '')
+def _execute_scheduled_post(job_id, text, image=''):
+    result = post_to_x(text, image)
     if job_id in scheduled_posts:
         scheduled_posts[job_id]['status'] = '投稿済み ✅' if result.get('success') else '失敗 ❌'
     _timers.pop(job_id, None)
@@ -72,6 +72,7 @@ def api_generate_images():
 def api_schedule():
     data = request.get_json()
     text = data.get('text', '').strip()
+    image = data.get('image', '')
     scheduled_time_str = data.get('scheduled_time', '')
     if not text or not scheduled_time_str:
         return jsonify({'success': False, 'error': '投稿テキストまたは日時が未入力です'})
@@ -83,7 +84,7 @@ def api_schedule():
     except ValueError:
         return jsonify({'success': False, 'error': '日時フォーマットエラー'})
     job_id = str(uuid.uuid4())[:8]
-    timer = threading.Timer(delay, _execute_scheduled_post, args=[job_id, text])
+    timer = threading.Timer(delay, _execute_scheduled_post, args=[job_id, text, image])
     timer.daemon = True
     timer.start()
     _timers[job_id] = timer

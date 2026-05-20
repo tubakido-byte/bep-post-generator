@@ -196,3 +196,23 @@ button:disabled {
     border-left-color: #ff6b6b;
     display: block;
 }
+
+.schedule-row {
+    margin: 10px 0 12px;
+}
+.schedule-row input[type="datetime-local"] {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+.schedule-hint {
+    display: block;
+    font-size: 11px;
+    color: #888;
+    margin-top: 4px;
+}

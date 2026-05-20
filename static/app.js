@@ -22,11 +22,11 @@ let selectedImage = {short: null, news: null};
 shortText.addEventListener('input', () => { shortCount.textContent = shortText.value.length; });
 opinionText?.addEventListener('input', () => { opinionCount.textContent = opinionText.value.length; });
 
-function switchTab(tab) {
+function switchTab(tab, btn) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById(`${tab}-section`).classList.add('active');
-    document.querySelectorAll('.tab')[tab === 'short' ? 0 : 1].classList.add('active');
+    btn.classList.add('active');
 }
 
 function loadNews() {
@@ -64,15 +64,30 @@ function postText(section) {
     const text = section === 'short' ? shortText.value.trim() : opinionText.value.trim();
     if (!text) { showResult(`${section}-result`, 'テキストを入力してください', 'error'); return; }
     if (section === 'news' && !selectedArticle) { showResult('news-result', '記事を選択してください', 'error'); return; }
-    fetch('/api/post', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text})})
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                showResult(`${section}-result`, `✓ 投稿完了！ <a href="${data.tweet_url}" target="_blank" style="color:#1da1f2;">Xで確認する →</a>`, 'success');
-            } else {
-                showResult(`${section}-result`, `✗ 投稿失敗: ${data.error}`, 'error');
-            }
-        });
+    const scheduleEl = document.getElementById(`${section}-schedule-time`);
+    const scheduleTime = scheduleEl ? scheduleEl.value : '';
+    if (scheduleTime) {
+        fetch('/api/schedule', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, scheduled_time: scheduleTime})})
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showResult(`${section}-result`, `✅ 予約完了！ ${scheduleTime.replace('T',' ')} に自動投稿されます (ID: ${data.job_id})`, 'success');
+                    scheduleEl.value = '';
+                } else {
+                    showResult(`${section}-result`, `✗ 予約失敗: ${data.error}`, 'error');
+                }
+            });
+    } else {
+        fetch('/api/post', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text})})
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showResult(`${section}-result`, `✓ 投稿完了！ <a href="${data.tweet_url}" target="_blank" style="color:#1da1f2;">Xで確認する →</a>`, 'success');
+                } else {
+                    showResult(`${section}-result`, `✗ 投稿失敗: ${data.error}`, 'error');
+                }
+            });
+    }
 }
 
 function generatePatterns(section) {
@@ -257,15 +272,30 @@ function postWithImage(section) {
     const text = section === 'short' ? shortText.value.trim() : opinionText.value.trim();
     const image = selectedImage[section];
     if (!image) return;
-    fetch('/api/post', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, image})})
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                showResult(`${section}-image-result`, `✓ 投稿完了！ <a href="${data.tweet_url}" target="_blank" style="color:#1da1f2;">Xで確認する →</a>`, 'success');
-            } else {
-                showResult(`${section}-image-result`, `✗ 投稿失敗: ${data.error}`, 'error');
-            }
-        });
+    const scheduleEl = document.getElementById(`${section}-schedule-time`);
+    const scheduleTime = scheduleEl ? scheduleEl.value : '';
+    if (scheduleTime) {
+        fetch('/api/schedule', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, image, scheduled_time: scheduleTime})})
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showResult(`${section}-image-result`, `✅ 予約完了！ ${scheduleTime.replace('T',' ')} に画像付きで自動投稿されます (ID: ${data.job_id})`, 'success');
+                    scheduleEl.value = '';
+                } else {
+                    showResult(`${section}-image-result`, `✗ 予約失敗: ${data.error}`, 'error');
+                }
+            });
+    } else {
+        fetch('/api/post', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, image})})
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showResult(`${section}-image-result`, `✓ 投稿完了！ <a href="${data.tweet_url}" target="_blank" style="color:#1da1f2;">Xで確認する →</a>`, 'success');
+                } else {
+                    showResult(`${section}-image-result`, `✗ 投稿失敗: ${data.error}`, 'error');
+                }
+            });
+    }
 }
 
 function showResult(id, msg, type) {
