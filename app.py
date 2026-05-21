@@ -80,12 +80,21 @@ def api_schedule():
     if not text or not scheduled_time_str:
         return jsonify({'success': False, 'error': '投稿テキストまたは日時が未入力です'})
     try:
-        dt = _jst.localize(datetime.fromisoformat(scheduled_time_str))
+        dt = None
+        for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d %H:%M:%S'):
+            try:
+                dt = datetime.strptime(scheduled_time_str, fmt)
+                break
+            except ValueError:
+                continue
+        if dt is None:
+            return jsonify({'success': False, 'error': f'日時フォーマットエラー（受信値: {scheduled_time_str[:30]}）'})
+        dt = _jst.localize(dt)
         delay = (dt - datetime.now(_jst)).total_seconds()
         if delay <= 0:
             return jsonify({'success': False, 'error': '過去の日時は指定できません'})
-    except ValueError:
-        return jsonify({'success': False, 'error': '日時フォーマットエラー'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'日時解析エラー: {str(e)[:60]}'})
     credentials = data.get('credentials')
     job_id = str(uuid.uuid4())[:8]
     timer = threading.Timer(delay, _execute_scheduled_post, args=[job_id, text, image, credentials])
