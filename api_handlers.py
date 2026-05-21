@@ -34,7 +34,7 @@ def post_to_x(text: str, image_b64: str = None, credentials: dict = None) -> dic
         r = requests.post("https://api.twitter.com/2/tweets", json=body, auth=auth, timeout=30)
         if r.status_code == 201:
             tweet_id = r.json()['data']['id']
-            tweet_url = f"https://x.com/akira_kanou/status/{tweet_id}"
+            tweet_url = f"https://x.com/i/web/status/{tweet_id}"
             return {"success": True, "tweet_id": tweet_id, "tweet_url": tweet_url}
         return {"success": False, "error": r.text[:200]}
     except Exception as e:
