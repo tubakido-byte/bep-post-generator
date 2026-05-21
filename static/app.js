@@ -19,19 +19,97 @@ let selectedArticle = null;
 let selectedPrompt = {short: null, news: null};
 let selectedImage = {short: null, news: null};
 
+const UPGRADE_URL = 'https://www.ins-japan.com/upgrade/';
+
 shortText.addEventListener('input', () => { shortCount.textContent = shortText.value.length; });
 opinionText?.addEventListener('input', () => { opinionCount.textContent = opinionText.value.length; });
 
+// ===== プラン管理 =====
+
+function getPlan() {
+    const plan = localStorage.getItem('xpost_plan');
+    if (plan) return plan;
+    // 後方互換：既存xpost_premiumをマイグレーション
+    if (localStorage.getItem('xpost_premium') === 'true') {
+        localStorage.setItem('xpost_plan', 'premium');
+        return 'premium';
+    }
+    return 'free';
+}
+
+function checkPostLimit(section) {
+    if (getPlan() !== 'free') return true;
+    const today = new Date().toISOString().split('T')[0];
+    const count = parseInt(localStorage.getItem(`xpost_post_${today}`) || '0');
+    if (count >= 3) {
+        showResult(`${section}-result`, `📊 本日の無料投稿回数（3回）に達しました。<a href="${UPGRADE_URL}" target="_blank" style="color:#f5a623;font-weight:700;">有料プランにアップグレード →</a>`, 'error');
+        return false;
+    }
+    return true;
+}
+
+function checkGenLimit(section) {
+    if (getPlan() !== 'free') return true;
+    const today = new Date().toISOString().split('T')[0];
+    const count = parseInt(localStorage.getItem(`xpost_gen_${today}`) || '0');
+    if (count >= 2) {
+        showResult(`${section}-result`, `🤖 本日のAI生成回数（2回）に達しました。<a href="${UPGRADE_URL}" target="_blank" style="color:#f5a623;font-weight:700;">有料プランにアップグレード →</a>`, 'error');
+        return false;
+    }
+    return true;
+}
+
+function checkImageAccess(section) {
+    if (getPlan() !== 'free') return true;
+    showResult(`${section}-result`, `🖼️ 画像生成は有料プラン（¥1,980/月）以上でご利用いただけます。<a href="${UPGRADE_URL}" target="_blank" style="color:#f5a623;font-weight:700;">アップグレード →</a>`, 'error');
+    return false;
+}
+
+function checkScheduleAccess(section) {
+    if (getPlan() !== 'free') return true;
+    showResult(`${section}-result`, `⏰ 予約投稿は有料プラン（¥1,980/月）以上でご利用いただけます。<a href="${UPGRADE_URL}" target="_blank" style="color:#f5a623;font-weight:700;">アップグレード →</a>`, 'error');
+    return false;
+}
+
+function incrementPostCount() {
+    if (getPlan() !== 'free') return;
+    const today = new Date().toISOString().split('T')[0];
+    const count = parseInt(localStorage.getItem(`xpost_post_${today}`) || '0');
+    localStorage.setItem(`xpost_post_${today}`, count + 1);
+}
+
+function incrementGenCount() {
+    if (getPlan() !== 'free') return;
+    const today = new Date().toISOString().split('T')[0];
+    const count = parseInt(localStorage.getItem(`xpost_gen_${today}`) || '0');
+    localStorage.setItem(`xpost_gen_${today}`, count + 1);
+}
+
+// ===== タブ切り替え =====
+
 function switchTab(tab, btn) {
+    if (tab === 'surge' && getPlan() !== 'premium') {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('surge-section').classList.add('active');
+        btn.classList.add('active');
+        document.getElementById('surge-lock-banner').style.display = 'block';
+        document.getElementById('surge-content').style.display = 'none';
+        return;
+    }
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById(`${tab}-section`).classList.add('active');
     btn.classList.add('active');
     if (tab === 'surge') {
+        document.getElementById('surge-lock-banner').style.display = 'none';
+        document.getElementById('surge-content').style.display = 'block';
         renderCalendar();
         loadContextInputs();
     }
 }
+
+// ===== ニュース取得 =====
 
 function loadNews() {
     const source = document.getElementById('news-source').value;
@@ -64,13 +142,21 @@ function loadNews() {
         });
 }
 
+// ===== 投稿 =====
+
 function postText(section) {
     const text = section === 'short' ? shortText.value.trim() : opinionText.value.trim();
     if (!text) { showResult(`${section}-result`, 'テキストを入力してください', 'error'); return; }
     if (section === 'news' && !selectedArticle) { showResult('news-result', '記事を選択してください', 'error'); return; }
+
     const scheduleEl = document.getElementById(`${section}-schedule-time`);
     const scheduleTime = scheduleEl ? scheduleEl.value : '';
+
+    if (scheduleTime && !checkScheduleAccess(section)) return;
+    if (!scheduleTime && !checkPostLimit(section)) return;
+
     const credentials = getSelectedCredentials(section);
+
     if (scheduleTime) {
         fetch('/api/schedule', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, scheduled_time: scheduleTime, credentials})})
             .then(r => r.json())
@@ -88,6 +174,7 @@ function postText(section) {
             .then(data => {
                 if (data.success) {
                     recordPost();
+                    incrementPostCount();
                     showResult(`${section}-result`, `✓ 投稿完了！ <a href="${data.tweet_url}" target="_blank" style="color:#1da1f2;">Xで確認する →</a>`, 'success');
                 } else {
                     showResult(`${section}-result`, `✗ 投稿失敗: ${data.error}`, 'error');
@@ -96,7 +183,11 @@ function postText(section) {
     }
 }
 
+// ===== AI生成 =====
+
 function generatePatterns(section) {
+    if (!checkGenLimit(section)) return;
+
     const textarea = section === 'short' ? shortText : opinionText;
     const counter = section === 'short' ? shortCount : opinionCount;
     const topic = section === 'short' ? (textarea.value.trim() || 'X投稿') : `${selectedArticle?.title || ''}: ${textarea.value.trim() || '記事に同意'}`;
@@ -118,6 +209,8 @@ function generatePatterns(section) {
             const prompts = data.prompts || [];
             const labels = data.labels || prompts;
             if (!prompts.length) { showResult(`${section}-result`, '✗ パターンを生成できませんでした。再度お試しください', 'error'); return; }
+
+            incrementGenCount();
 
             const list = document.getElementById(`${section}-patterns-list`);
             list.innerHTML = '';
@@ -157,7 +250,11 @@ function generatePatterns(section) {
         });
 }
 
+// ===== 画像生成 =====
+
 function generateImages(section) {
+    if (!checkImageAccess(section)) return;
+
     const prompt = selectedPrompt[section];
     if (!prompt) return;
     const btn = document.getElementById(`${section}-image-btn`);
@@ -207,6 +304,8 @@ function generateImages(section) {
 }
 
 function generateImagesFromText(section) {
+    if (!checkImageAccess(section)) return;
+
     const textarea = section === 'short' ? shortText : opinionText;
     const prompt = textarea.value.trim();
     if (!prompt) { showResult(`${section}-result`, 'テキストを入力してください', 'error'); return; }
@@ -274,12 +373,18 @@ function addTitleToImage(b64, text, callback) {
     img.src = `data:image/png;base64,${b64}`;
 }
 
+// ===== 画像付き投稿 =====
+
 function postWithImage(section) {
     const text = section === 'short' ? shortText.value.trim() : opinionText.value.trim();
     const image = selectedImage[section];
     if (!image) return;
     const scheduleEl = document.getElementById(`${section}-schedule-time`);
     const scheduleTime = scheduleEl ? scheduleEl.value : '';
+
+    if (scheduleTime && !checkScheduleAccess(section)) return;
+    if (!scheduleTime && !checkPostLimit(section)) return;
+
     const credentials = getSelectedCredentials(section);
     if (scheduleTime) {
         fetch('/api/schedule', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, image, scheduled_time: scheduleTime, credentials})})
@@ -297,6 +402,8 @@ function postWithImage(section) {
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
+                    recordPost();
+                    incrementPostCount();
                     showResult(`${section}-image-result`, `✓ 投稿完了！ <a href="${data.tweet_url}" target="_blank" style="color:#1da1f2;">Xで確認する →</a>`, 'success');
                 } else {
                     showResult(`${section}-image-result`, `✗ 投稿失敗: ${data.error}`, 'error');
@@ -314,9 +421,9 @@ function showResult(id, msg, type) {
 // ===== プレミアム＆マルチアカウント管理 =====
 
 function initSettings() {
-    const isPremium = localStorage.getItem('xpost_premium') === 'true';
-    updatePremiumUI(isPremium);
-    if (isPremium) renderAccountList();
+    const plan = getPlan();
+    updatePlanUI(plan);
+    if (plan === 'premium') renderAccountList();
     updateAccountSelectors();
 }
 
@@ -331,41 +438,47 @@ function verifyPremium() {
     .then(r => r.json())
     .then(data => {
         if (data.valid) {
-            localStorage.setItem('xpost_premium', 'true');
-            updatePremiumUI(true);
-            showResult('premium-result', '✅ プレミアム認証完了！複数アカウント機能が使えます', 'success');
+            localStorage.setItem('xpost_plan', data.plan);
+            localStorage.setItem('xpost_premium', data.plan === 'premium' ? 'true' : 'false');
+            updatePlanUI(data.plan);
+            if (data.plan === 'premium') renderAccountList();
+            updateAccountSelectors();
+            const msg = data.plan === 'premium'
+                ? '✅ プレミアムプラン認証完了！SURGE全機能＋複数アカウントが使えます'
+                : '✅ 有料プラン認証完了！画像生成・予約投稿・全基本機能が使えます';
+            showResult('premium-result', msg, 'success');
         } else {
-            showResult('premium-result', '❌ コードが正しくありません。有料会員登録メールをご確認ください', 'error');
+            showResult('premium-result', '❌ コードが正しくありません。登録メールをご確認ください', 'error');
         }
     });
 }
 
 function resetPremium() {
+    localStorage.removeItem('xpost_plan');
     localStorage.removeItem('xpost_premium');
     localStorage.removeItem('xpost_accounts');
-    updatePremiumUI(false);
+    updatePlanUI('free');
     updateAccountSelectors();
 }
 
-function updatePremiumUI(isPremium) {
+function updatePlanUI(plan) {
     const status = document.getElementById('premium-status');
     const mgmt = document.getElementById('account-management');
     const resetBtn = document.getElementById('reset-premium-btn');
     const inputArea = document.getElementById('premium-input-area');
     if (!status) return;
-    if (isPremium) {
-        status.textContent = '✅ プレミアムプラン（複数アカウント対応）';
-        status.style.cssText = 'padding:8px 14px;border-radius:20px;display:inline-block;font-size:13px;font-weight:600;background:#0d2a0d;color:#4caf50;margin-bottom:14px;';
-        mgmt.style.display = 'block';
-        resetBtn.style.display = 'inline-block';
-        inputArea.style.display = 'none';
-    } else {
-        status.textContent = '🔒 無料プラン（1アカウントのみ）';
-        status.style.cssText = 'padding:8px 14px;border-radius:20px;display:inline-block;font-size:13px;font-weight:600;background:#2a1a1a;color:#ff6b6b;margin-bottom:14px;';
-        mgmt.style.display = 'none';
-        resetBtn.style.display = 'none';
-        inputArea.style.display = 'block';
-    }
+
+    const configs = {
+        free:    { text: '🔒 無料プラン（基本機能・1日3回まで）',         bg: '#2a1a1a', color: '#ff6b6b', showMgmt: false, showReset: false, showInput: true  },
+        basic:   { text: '✅ 有料プラン（¥1,980/月）— 全基本機能',        bg: '#1a2a0d', color: '#8bc34a', showMgmt: false, showReset: true,  showInput: false },
+        premium: { text: '⚡ プレミアムプラン（¥2,980/月）— SURGE対応',   bg: '#0d1a2a', color: '#1da1f2', showMgmt: true,  showReset: true,  showInput: false }
+    };
+    const c = configs[plan] || configs.free;
+    status.textContent = c.text;
+    status.style.cssText = `padding:8px 14px;border-radius:20px;display:inline-block;font-size:13px;font-weight:600;background:${c.bg};color:${c.color};margin-bottom:14px;`;
+    mgmt.style.display = c.showMgmt ? 'block' : 'none';
+    resetBtn.style.display = c.showReset ? 'inline-block' : 'none';
+    inputArea.style.display = c.showInput ? 'block' : 'none';
 }
 
 function getAccounts() {
@@ -417,7 +530,7 @@ function renderAccountList() {
 
 function updateAccountSelectors() {
     const accounts = getAccounts();
-    const isPremium = localStorage.getItem('xpost_premium') === 'true';
+    const isPremium = getPlan() === 'premium';
     ['short','news'].forEach(section => {
         const row = document.getElementById(`${section}-account-row`);
         const select = document.getElementById(`${section}-account-select`);
@@ -433,7 +546,7 @@ function updateAccountSelectors() {
 }
 
 function getSelectedCredentials(section) {
-    if (localStorage.getItem('xpost_premium') !== 'true') return null;
+    if (getPlan() !== 'premium') return null;
     const select = document.getElementById(`${section}-account-select`);
     if (!select || !select.value) return null;
     const id = parseInt(select.value);

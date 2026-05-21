@@ -136,8 +136,9 @@
                 <div id="premium-status" style="padding:8px 14px;border-radius:20px;display:inline-block;font-size:13px;font-weight:600;background:#2a1a1a;color:#ff6b6b;margin-bottom:14px;">🔒 無料プラン（1アカウントのみ）</div>
                 <div id="premium-input-area">
                     <div class="form-group">
-                        <label>プレミアムコード</label>
-                        <input type="text" id="premium-code-input" placeholder="例：XXXX-XXXX-XXXX" style="letter-spacing:2px;">
+                        <label>プランコード（登録メールに記載）</label>
+                        <input type="text" id="premium-code-input" placeholder="例：XPOST-BASIC-2024" style="letter-spacing:2px;">
+                        <div style="font-size:11px;color:#888;margin-top:6px;">有料プラン（¥1,980）または プレミアムプラン（¥2,980）のコードを入力してください</div>
                     </div>
                     <button onclick="verifyPremium()">🔑 認証する</button>
                 </div>
@@ -190,6 +191,12 @@
         <!-- SURGEセクション -->
         <div id="surge-section" class="section">
             <div class="section-title">⚡ SURGE — バズり投稿エンジン</div>
+            <div id="surge-lock-banner" style="display:none;background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:12px;padding:24px;text-align:center;margin-bottom:24px;">
+                <div style="font-size:1.2em;font-weight:700;color:#fff;margin-bottom:8px;">⚡ SURGE はプレミアムプラン専用です</div>
+                <p style="color:rgba(255,255,255,0.88);margin:0 0 16px;font-size:0.95em;line-height:1.6;">バズり構文エンジン・長文生成・プロフ診断など7機能が使えます。<br>プレミアムプラン（¥2,980/月）にアップグレードしてください。</p>
+                <a href="https://www.ins-japan.com/upgrade/" target="_blank" style="display:inline-block;background:#fff;color:#7c3aed;font-weight:700;padding:10px 28px;border-radius:8px;text-decoration:none;font-size:0.97em;">プレミアムにアップグレード →</a>
+            </div>
+            <div id="surge-content">
 
             <!-- ① 動画＋長文生成 -->
             <div class="surge-card">
@@ -301,6 +308,7 @@
                 <button onclick="saveContext()">💾 魂を保存</button>
                 <div id="sg-ctx-result" class="result"></div>
             </div>
+            </div><!-- /#surge-content -->
         </div>
     </div>
 

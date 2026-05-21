@@ -8,6 +8,7 @@ from config import GEMINI_API_KEY
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'xpost-secret-2024')
 PREMIUM_CODE = os.environ.get('PREMIUM_CODE', 'XPOST-PRO-2024')
+PREMIUM_CODE_BASIC = os.environ.get('PREMIUM_CODE_BASIC', 'XPOST-BASIC-2024')
 
 _jst = pytz.timezone('Asia/Tokyo')
 scheduled_posts = {}
@@ -126,7 +127,9 @@ def api_cancel_schedule(job_id):
 def api_verify_premium():
     code = request.get_json().get('code', '').strip().upper()
     if code == PREMIUM_CODE.upper():
-        return jsonify({'valid': True})
+        return jsonify({'valid': True, 'plan': 'premium'})
+    if code == PREMIUM_CODE_BASIC.upper():
+        return jsonify({'valid': True, 'plan': 'basic'})
     return jsonify({'valid': False})
 
 @app.route('/api/surge/long-post', methods=['POST'])
