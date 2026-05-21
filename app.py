@@ -57,7 +57,8 @@ def api_generate():
             return jsonify({'prompts': [], 'error': 'AI生成に失敗しました。しばらく待ってから再試行してください'})
         return jsonify(result)
     except Exception as e:
-        return jsonify({'prompts': [], 'error': f'生成エラー: {str(e)[:100]}'})
+        msg = 'AI生成がタイムアウトしました。もう一度お試しください' if 'futures' in str(e).lower() or 'timeout' in str(e).lower() else f'生成エラー: {str(e)[:80]}'
+        return jsonify({'prompts': [], 'error': msg})
 
 @app.route('/api/generate-images', methods=['POST'])
 def api_generate_images():

@@ -158,14 +158,17 @@ def generate_posts(topic: str) -> dict:
     patterns = [None, None, None]
     with ThreadPoolExecutor(max_workers=3) as executor:
         future_to_idx = {executor.submit(_call_gemini, p): i for i, p in enumerate(prompts_list)}
-        for future in as_completed(future_to_idx, timeout=25):
-            idx = future_to_idx[future]
-            try:
-                text = future.result()
-                if text and len(text) > 5:
-                    patterns[idx] = _shorten_to_280(text)
-            except Exception as e:
-                print(f"[DEBUG] Future error: {e}")
+        try:
+            for future in as_completed(future_to_idx, timeout=50):
+                idx = future_to_idx[future]
+                try:
+                    text = future.result()
+                    if text and len(text) > 5:
+                        patterns[idx] = _shorten_to_280(text)
+                except Exception as e:
+                    print(f"[DEBUG] Future error: {e}")
+        except Exception:
+            pass
     for i, p in enumerate(patterns):
         if p is None:
             result = _call_gemini(prompts_list[i])
