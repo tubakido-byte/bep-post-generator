@@ -88,7 +88,7 @@ function checkImageAccess(section) {
 
 function checkScheduleAccess(section) {
     if (getPlan() !== 'free') return true;
-    showResult(`${section}-result`, `⏰ 予約投稿は有料プラン（¥1,980/月）以上でご利用いただけます。<a href="${UPGRADE_URL}" target="_blank" style="color:#f5a623;font-weight:700;">アップグレード →</a>`, 'error');
+    showResult(`${section}-result`, `⏰ 予約投稿は有料プラン（¥1,980/月）から利用いただけます。<a href="${UPGRADE_URL}" target="_blank" style="color:#f5a623;font-weight:700;">アップグレード →</a>`, 'error');
     return false;
 }
 
