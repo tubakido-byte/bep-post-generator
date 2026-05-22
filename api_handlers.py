@@ -9,11 +9,19 @@ from requests_oauthlib import OAuth1
 from config import X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, GEMINI_API_KEY, NEWS_SOURCES
 
 def post_to_x(text: str, image_b64: str = None, credentials: dict = None) -> dict:
-    if credentials and all(credentials.get(k) for k in ['ck','cs','at','ats']):
-        ck = credentials['ck']; cs = credentials['cs']
-        at = credentials['at']; ats = credentials['ats']
+    # サーバーのCK/CSをベースに、ユーザーのAT/ATSがあれば優先使用
+    ck = X_CONSUMER_KEY
+    cs = X_CONSUMER_SECRET
+    if credentials and credentials.get('at') and credentials.get('ats'):
+        at  = credentials['at']
+        ats = credentials['ats']
+        # プレミアム手動設定: 独自CK/CSも上書き
+        if credentials.get('ck') and credentials.get('cs'):
+            ck = credentials['ck']
+            cs = credentials['cs']
     else:
-        ck, cs, at, ats = X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET
+        at  = X_ACCESS_TOKEN
+        ats = X_ACCESS_TOKEN_SECRET
     auth = OAuth1(ck, cs, at, ats)
     try:
         media_ids = []

@@ -1,3 +1,24 @@
+// OAuth コールバック処理
+(function() {
+    const hash = window.location.hash;
+    if (hash.startsWith('#oauth-done')) {
+        const params = new URLSearchParams(hash.slice('#oauth-done?'.length));
+        const at = params.get('at'), ats = params.get('ats'), sn = params.get('sn');
+        if (at && ats) {
+            const accounts = (() => { try { return JSON.parse(localStorage.getItem('xpost_accounts') || '[]'); } catch { return []; } })();
+            if (!accounts.find(a => a.at === at)) {
+                const plan = localStorage.getItem('xpost_plan') || 'free';
+                const limit = plan === 'premium' ? 99 : 1;
+                if (accounts.length < limit) {
+                    accounts.push({ name: '@' + sn, at, ats, ck: '', cs: '', id: Date.now() });
+                    localStorage.setItem('xpost_accounts', JSON.stringify(accounts));
+                }
+            }
+        }
+        history.replaceState(null, '', '/');
+    }
+})();
+
 // 起動時API状態チェック
 fetch('/api/health').then(r => r.json()).then(data => {
     const bar = document.getElementById('health-bar');
@@ -469,16 +490,18 @@ function updatePlanUI(plan) {
     if (!status) return;
 
     const configs = {
-        free:    { text: '🔒 無料プラン（基本機能・1日3回まで）',         bg: '#2a1a1a', color: '#ff6b6b', showMgmt: false, showReset: false, showInput: true  },
-        basic:   { text: '✅ 有料プラン（¥1,980/月）— 全基本機能',        bg: '#1a2a0d', color: '#8bc34a', showMgmt: true,  showReset: true,  showInput: false },
-        premium: { text: '⚡ プレミアムプラン（¥2,980/月）— SURGE対応',   bg: '#0d1a2a', color: '#1da1f2', showMgmt: true,  showReset: true,  showInput: false }
+        free:    { text: '🔒 無料プラン（1日3回まで）',                   bg: '#2a1a1a', color: '#ff6b6b', showReset: false, showInput: true  },
+        basic:   { text: '✅ 有料プラン（¥1,980/月）— 全基本機能',        bg: '#1a2a0d', color: '#8bc34a', showReset: true,  showInput: false },
+        premium: { text: '⚡ プレミアムプラン（¥2,980/月）— SURGE対応',   bg: '#0d1a2a', color: '#1da1f2', showReset: true,  showInput: false }
     };
     const c = configs[plan] || configs.free;
     status.textContent = c.text;
     status.style.cssText = `padding:8px 14px;border-radius:20px;display:inline-block;font-size:13px;font-weight:600;background:${c.bg};color:${c.color};margin-bottom:14px;`;
-    mgmt.style.display = c.showMgmt ? 'block' : 'none';
+    mgmt.style.display = 'block';
     resetBtn.style.display = c.showReset ? 'inline-block' : 'none';
     inputArea.style.display = c.showInput ? 'block' : 'none';
+    const manualApi = document.getElementById('manual-api-section');
+    if (manualApi) manualApi.style.display = plan === 'premium' ? 'block' : 'none';
 }
 
 function getAccounts() {

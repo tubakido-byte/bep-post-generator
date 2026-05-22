@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, redirect
 import os, requests, uuid, threading
 from datetime import datetime
 import pytz
+from requests_oauthlib import OAuth1
 from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles, health_check, surge_long_post, surge_buzz, surge_self_quote, surge_inspo, surge_profile_check
 from config import GEMINI_API_KEY
 
@@ -19,6 +20,42 @@ def _execute_scheduled_post(job_id, text, image='', credentials=None):
     if job_id in scheduled_posts:
         scheduled_posts[job_id]['status'] = '投稿済み ✅' if result.get('success') else '失敗 ❌'
     _timers.pop(job_id, None)
+
+_oauth_temp = {}  # request_token → request_token_secret (一時保存)
+
+@app.route('/oauth/start')
+def oauth_start():
+    ck = os.environ.get('X_CONSUMER_KEY', '')
+    cs = os.environ.get('X_CONSUMER_SECRET', '')
+    if not ck or not cs:
+        return 'X_CONSUMER_KEY/SECRET が未設定です', 500
+    callback = request.host_url.rstrip('/') + '/oauth/callback'
+    auth = OAuth1(ck, cs, callback_uri=callback)
+    r = requests.post('https://api.twitter.com/oauth/request_token', auth=auth, timeout=10)
+    if r.status_code != 200:
+        return f'リクエストトークン取得失敗: {r.text}', 400
+    params = dict(p.split('=') for p in r.text.split('&'))
+    _oauth_temp[params['oauth_token']] = params['oauth_token_secret']
+    return redirect(f"https://api.twitter.com/oauth/authorize?oauth_token={params['oauth_token']}")
+
+@app.route('/oauth/callback')
+def oauth_callback():
+    oauth_token    = request.args.get('oauth_token', '')
+    oauth_verifier = request.args.get('oauth_verifier', '')
+    token_secret   = _oauth_temp.pop(oauth_token, None)
+    if not token_secret:
+        return '認証セッションが無効です。もう一度お試しください', 400
+    ck = os.environ.get('X_CONSUMER_KEY', '')
+    cs = os.environ.get('X_CONSUMER_SECRET', '')
+    auth = OAuth1(ck, cs, oauth_token, token_secret, verifier=oauth_verifier)
+    r = requests.post('https://api.twitter.com/oauth/access_token', auth=auth, timeout=10)
+    if r.status_code != 200:
+        return f'アクセストークン取得失敗: {r.text}', 400
+    p = dict(x.split('=') for x in r.text.split('&'))
+    at  = p.get('oauth_token', '')
+    ats = p.get('oauth_token_secret', '')
+    sn  = p.get('screen_name', '')
+    return redirect(f'/#oauth-done?at={at}&ats={ats}&sn={sn}')
 
 @app.route('/logout')
 def logout():

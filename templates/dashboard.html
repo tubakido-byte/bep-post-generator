@@ -146,20 +146,35 @@
                 <div id="premium-result" class="result"></div>
             </div>
 
-            <!-- マルチアカウント管理（プレミアム時のみ表示） -->
+            <!-- アカウント連携（全プラン） -->
             <div id="account-management" style="display:none;">
+                <!-- OAuthログイン -->
                 <div style="background:#1a1a2e;border:1px solid #333;border-radius:10px;padding:20px;margin-bottom:20px;">
-                    <div style="font-size:16px;font-weight:600;margin-bottom:16px;">➕ アカウントを追加</div>
+                    <div style="font-size:16px;font-weight:600;margin-bottom:12px;">🐦 Xアカウントを連携</div>
+                    <p style="font-size:13px;color:#aaa;margin-bottom:16px;">ボタンをクリックするとXの認証画面が開きます。承認するだけで連携完了です。</p>
+                    <a href="/oauth/start" style="display:inline-block;background:#1da1f2;color:#fff;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:15px;">🐦 Xでログインして連携する</a>
+                    <div id="account-add-result" class="result" style="margin-top:12px;"></div>
+                </div>
+
+                <!-- 登録済みアカウント -->
+                <div style="background:#1a1a2e;border:1px solid #333;border-radius:10px;padding:20px;margin-bottom:20px;">
+                    <div style="font-size:16px;font-weight:600;margin-bottom:12px;">📋 連携済みアカウント</div>
+                    <div id="account-list"></div>
+                </div>
+
+                <!-- 手動APIキー（プレミアムのみ） -->
+                <div id="manual-api-section" style="display:none;background:#1a1a2e;border:1px solid #555;border-radius:10px;padding:20px;margin-bottom:20px;">
+                    <div style="font-size:14px;font-weight:600;margin-bottom:12px;color:#ffd700;">⚙️ 手動APIキー登録（プレミアム・上級者向け）</div>
                     <div class="form-group">
-                        <label>アカウント名（例：メインアカウント）</label>
-                        <input type="text" id="account-name" placeholder="わかりやすい名前">
+                        <label>アカウント名</label>
+                        <input type="text" id="account-name" placeholder="例：サブアカウント">
                     </div>
                     <div class="form-group">
-                        <label>API Key（Consumer Key）</label>
+                        <label>Consumer Key</label>
                         <input type="password" id="account-ck" placeholder="Consumer Key">
                     </div>
                     <div class="form-group">
-                        <label>API Secret（Consumer Secret）</label>
+                        <label>Consumer Secret</label>
                         <input type="password" id="account-cs" placeholder="Consumer Secret">
                     </div>
                     <div class="form-group">
@@ -170,13 +185,7 @@
                         <label>Access Token Secret</label>
                         <input type="password" id="account-ats" placeholder="Access Token Secret">
                     </div>
-                    <button onclick="addAccount()">💾 アカウントを保存</button>
-                    <div id="account-add-result" class="result"></div>
-                </div>
-
-                <div style="background:#1a1a2e;border:1px solid #333;border-radius:10px;padding:20px;">
-                    <div style="font-size:16px;font-weight:600;margin-bottom:12px;">📋 登録済みアカウント</div>
-                    <div id="account-list"></div>
+                    <button onclick="addAccount()">💾 保存</button>
                 </div>
             </div>
 
