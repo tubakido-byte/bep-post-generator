@@ -165,13 +165,22 @@ function loadNews() {
 
 // ===== 投稿 =====
 
+function getScheduleTime(section) {
+    const y = document.getElementById(`${section}-sched-year`)?.value;
+    const mo = document.getElementById(`${section}-sched-month`)?.value;
+    const d = document.getElementById(`${section}-sched-day`)?.value;
+    const h = document.getElementById(`${section}-sched-hour`)?.value;
+    const mi = document.getElementById(`${section}-sched-min`)?.value;
+    if (y && mo && d && h && mi) return `${y}-${mo}-${d}T${h}:${mi}`;
+    return '';
+}
+
 function postText(section) {
     const text = section === 'short' ? shortText.value.trim() : opinionText.value.trim();
     if (!text) { showResult(`${section}-result`, 'テキストを入力してください', 'error'); return; }
     if (section === 'news' && !selectedArticle) { showResult('news-result', '記事を選択してください', 'error'); return; }
 
-    const scheduleEl = document.getElementById(`${section}-schedule-time`);
-    const scheduleTime = scheduleEl ? scheduleEl.value : '';
+    const scheduleTime = getScheduleTime(section);
 
     if (scheduleTime && !checkScheduleAccess(section)) return;
     if (!scheduleTime && !checkPostLimit(section)) return;
@@ -502,6 +511,11 @@ function updatePlanUI(plan) {
     inputArea.style.display = c.showInput ? 'block' : 'none';
     const manualApi = document.getElementById('manual-api-section');
     if (manualApi) manualApi.style.display = plan === 'premium' ? 'block' : 'none';
+    const isFree = plan === 'free';
+    ['short-schedule-notice','news-schedule-notice'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = isFree ? 'block' : 'none';
+    });
 }
 
 function getAccounts() {
