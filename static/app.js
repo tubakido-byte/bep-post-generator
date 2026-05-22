@@ -73,8 +73,8 @@ function checkGenLimit(section) {
     if (getPlan() !== 'free') return true;
     const today = new Date().toISOString().split('T')[0];
     const count = parseInt(localStorage.getItem(`xpost_gen_${today}`) || '0');
-    if (count >= 2) {
-        showResult(`${section}-result`, `🤖 本日のAI生成回数（2回）に達しました。<a href="${UPGRADE_URL}" target="_blank" style="color:#f5a623;font-weight:700;">有料プランにアップグレード →</a>`, 'error');
+    if (count >= 5) {
+        showResult(`${section}-result`, `🤖 本日のAI生成回数（5回）に達しました。<a href="${UPGRADE_URL}" target="_blank" style="color:#f5a623;font-weight:700;">有料プランにアップグレード →</a>`, 'error');
         return false;
     }
     return true;
