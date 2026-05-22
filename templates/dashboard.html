@@ -44,7 +44,6 @@
             <button class="secondary" onclick="generateImagesFromText('short')">🖼️ 画像生成（3種類）</button>
             <div id="short-loading" class="loading-message">⏳ 1分～2分程お待ちください...</div>
             <div id="short-direct-image-loading" class="loading-message">⏳ 画像生成中（1〜2分）...</div>
-            <div id="short-result" class="result"></div>
 
             <!-- 生成されたパターン表示 -->
             <div id="short-patterns" style="margin-top:30px;display:none;">
@@ -54,6 +53,7 @@
                 <div id="short-image-loading" class="loading-message">⏳ 画像生成中（1〜2分）...</div>
             </div>
             <button onclick="postText('short')" style="margin-top:20px;">📤 投稿する</button>
+            <div id="short-result" class="result"></div>
 
             <!-- 画像選択エリア -->
             <div id="short-image-section" style="margin-top:30px;display:none;">
@@ -107,8 +107,6 @@
                 <div id="news-loading" class="loading-message">⏳ 1分～2分程お待ちください...</div>
             </div>
 
-            <div id="news-result" class="result"></div>
-
             <!-- 生成されたパターン表示 -->
             <div id="news-patterns" style="margin-top:30px;display:none;">
                 <div class="section-title" style="font-size:18px;margin-bottom:15px;">生成されたパターン</div>
@@ -117,6 +115,7 @@
                 <div id="news-image-loading" class="loading-message">⏳ 画像生成中（1〜2分）...</div>
             </div>
             <button onclick="postText('news')" style="margin-top:20px;">📤 投稿する</button>
+            <div id="news-result" class="result"></div>
 
             <!-- 画像選択エリア -->
             <div id="news-image-section" style="margin-top:30px;display:none;">
