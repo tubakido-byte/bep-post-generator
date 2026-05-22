@@ -39,25 +39,25 @@
             <div id="short-schedule-notice" style="display:none;background:#2a1a0a;border:1px solid #f5a623;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:#f5a623;">
                 ⏰ 予約投稿は有料プラン（¥1,980/月）から利用いただけます。<a href="https://www.ins-japan.com/upgrade/" target="_blank" style="color:#f5a623;font-weight:700;">アップグレード →</a>
             </div>
-            <div class="schedule-row" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                <select id="short-sched-year"  style="padding:8px 6px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;">
+            <div class="schedule-row" style="display:flex;gap:6px;align-items:center;flex-wrap:nowrap;">
+                <select id="short-sched-year"  style="padding:8px 4px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;flex:1;min-width:0;">
                     <option value="">年</option>
                     <option value="2026">2026</option>
                     <option value="2027">2027</option>
                 </select>
-                <select id="short-sched-month" style="padding:8px 6px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;">
+                <select id="short-sched-month" style="padding:8px 4px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;flex:1;min-width:0;">
                     <option value="">月</option>
                     <script>for(var m=1;m<=12;m++) document.write('<option value="'+String(m).padStart(2,'0')+'">'+m+'月</option>');</script>
                 </select>
-                <select id="short-sched-day"   style="padding:8px 6px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;">
+                <select id="short-sched-day"   style="padding:8px 4px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;flex:1;min-width:0;">
                     <option value="">日</option>
                     <script>for(var d=1;d<=31;d++) document.write('<option value="'+String(d).padStart(2,'0')+'">'+d+'日</option>');</script>
                 </select>
-                <select id="short-sched-hour"  style="padding:8px 6px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;">
+                <select id="short-sched-hour"  style="padding:8px 4px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;flex:1;min-width:0;">
                     <option value="">時</option>
                     <script>for(var h=0;h<=23;h++) document.write('<option value="'+String(h).padStart(2,'0')+'">'+h+'時</option>');</script>
                 </select>
-                <select id="short-sched-min"   style="padding:8px 6px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;">
+                <select id="short-sched-min"   style="padding:8px 4px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;flex:1;min-width:0;">
                     <option value="">分</option>
                     <script>['00','05','10','15','20','25','30','35','40','45','50','55'].forEach(function(v){document.write('<option value="'+v+'">'+v+'分</option>');});</script>
                 </select>
@@ -126,25 +126,25 @@
                 <div id="news-schedule-notice" style="display:none;background:#2a1a0a;border:1px solid #f5a623;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:#f5a623;">
                     ⏰ 予約投稿は有料プラン（¥1,980/月）から利用いただけます。<a href="https://www.ins-japan.com/upgrade/" target="_blank" style="color:#f5a623;font-weight:700;">アップグレード →</a>
                 </div>
-                <div class="schedule-row" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                    <select id="news-sched-year"  style="padding:8px 6px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;">
+                <div class="schedule-row" style="display:flex;gap:6px;align-items:center;flex-wrap:nowrap;">
+                    <select id="news-sched-year"  style="padding:8px 4px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;flex:1;min-width:0;">
                         <option value="">年</option>
                         <option value="2026">2026</option>
                         <option value="2027">2027</option>
                     </select>
-                    <select id="news-sched-month" style="padding:8px 6px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;">
+                    <select id="news-sched-month" style="padding:8px 4px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;flex:1;min-width:0;">
                         <option value="">月</option>
                         <script>for(var m=1;m<=12;m++) document.write('<option value="'+String(m).padStart(2,'0')+'">'+m+'月</option>');</script>
                     </select>
-                    <select id="news-sched-day"   style="padding:8px 6px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;">
+                    <select id="news-sched-day"   style="padding:8px 4px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;flex:1;min-width:0;">
                         <option value="">日</option>
                         <script>for(var d=1;d<=31;d++) document.write('<option value="'+String(d).padStart(2,'0')+'">'+d+'日</option>');</script>
                     </select>
-                    <select id="news-sched-hour"  style="padding:8px 6px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;">
+                    <select id="news-sched-hour"  style="padding:8px 4px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;flex:1;min-width:0;">
                         <option value="">時</option>
                         <script>for(var h=0;h<=23;h++) document.write('<option value="'+String(h).padStart(2,'0')+'">'+h+'時</option>');</script>
                     </select>
-                    <select id="news-sched-min"   style="padding:8px 6px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;">
+                    <select id="news-sched-min"   style="padding:8px 4px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;font-size:13px;flex:1;min-width:0;">
                         <option value="">分</option>
                         <script>['00','05','10','15','20','25','30','35','40','45','50','55'].forEach(function(v){document.write('<option value="'+v+'">'+v+'分</option>');});</script>
                     </select>
