@@ -470,7 +470,7 @@ function updatePlanUI(plan) {
 
     const configs = {
         free:    { text: '🔒 無料プラン（基本機能・1日3回まで）',         bg: '#2a1a1a', color: '#ff6b6b', showMgmt: false, showReset: false, showInput: true  },
-        basic:   { text: '✅ 有料プラン（¥1,980/月）— 全基本機能',        bg: '#1a2a0d', color: '#8bc34a', showMgmt: false, showReset: true,  showInput: false },
+        basic:   { text: '✅ 有料プラン（¥1,980/月）— 全基本機能',        bg: '#1a2a0d', color: '#8bc34a', showMgmt: true,  showReset: true,  showInput: false },
         premium: { text: '⚡ プレミアムプラン（¥2,980/月）— SURGE対応',   bg: '#0d1a2a', color: '#1da1f2', showMgmt: true,  showReset: true,  showInput: false }
     };
     const c = configs[plan] || configs.free;
@@ -495,6 +495,10 @@ function addAccount() {
         showResult('account-add-result', '❌ すべての項目を入力してください', 'error'); return;
     }
     const accounts = getAccounts();
+    const plan = localStorage.getItem('xpost_plan') || 'free';
+    if (plan === 'basic' && accounts.length >= 1) {
+        showResult('account-add-result', '❌ 有料プランは1アカウントまでです。複数登録はプレミアムにアップグレードしてください', 'error'); return;
+    }
     accounts.push({name, ck, cs, at, ats, id: Date.now()});
     localStorage.setItem('xpost_accounts', JSON.stringify(accounts));
     ['account-name','account-ck','account-cs','account-at','account-ats'].forEach(id => document.getElementById(id).value = '');
