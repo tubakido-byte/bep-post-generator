@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, redirect
-import os, requests, uuid, threading
+import os, requests, uuid, threading, hmac, hashlib, base64, time
 from datetime import datetime
 import pytz
 from requests_oauthlib import OAuth1
@@ -10,6 +10,22 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'xpost-secret-2024')
 PREMIUM_CODE = os.environ.get('PREMIUM_CODE', 'XPOST-PRO-2024')
 PREMIUM_CODE_BASIC = os.environ.get('PREMIUM_CODE_BASIC', 'XPOST-BASIC-2024')
+SWPM_LAUNCH_SECRET = os.environ.get('SWPM_LAUNCH_SECRET', 'xpost2024-swpm-8a3f-b2c1-d4e5f6')
+
+def _verify_swpm_token(token: str) -> int:
+    """SWPM levelを返す（無効なら-1）"""
+    try:
+        b64, sig = token.rsplit('.', 1)
+        data = base64.b64decode(b64).decode()
+        expected = hmac.new(SWPM_LAUNCH_SECRET.encode(), data.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, sig):
+            return -1
+        parts = data.split(':')
+        if time.time() - int(parts[2]) > 3600:
+            return -1
+        return int(parts[1])
+    except Exception:
+        return -1
 
 _jst = pytz.timezone('Asia/Tokyo')
 scheduled_posts = {}
@@ -63,7 +79,13 @@ def logout():
 
 @app.route('/')
 def dashboard():
-    return render_template('dashboard.html')
+    swpm_level = None
+    t = request.args.get('t', '')
+    if t:
+        lvl = _verify_swpm_token(t)
+        if lvl >= 0:
+            swpm_level = lvl
+    return render_template('dashboard.html', swpm_level=swpm_level)
 
 @app.route('/api/health')
 def api_health():

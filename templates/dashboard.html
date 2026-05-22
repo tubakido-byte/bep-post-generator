@@ -369,6 +369,16 @@
         </div>
     </div>
 
+    {% if swpm_level is not none %}
+    <script>
+    (function() {
+        var lvl = {{ swpm_level }};
+        var plan = lvl === 6 ? 'premium' : (lvl === 2 ? 'basic' : 'free');
+        localStorage.setItem('xpost_plan', plan);
+        localStorage.setItem('xpost_swpm_level', String(lvl));
+    })();
+    </script>
+    {% endif %}
     <script src="/static/app.js"></script>
 </body>
 </html>
