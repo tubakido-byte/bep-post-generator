@@ -40,7 +40,6 @@
                 <input type="datetime-local" id="short-schedule-time">
                 <span class="schedule-hint">⏰ 空欄 = 今すぐ投稿 ／ 日時入力 = 予約投稿</span>
             </div>
-            <button onclick="postText('short')">📤 投稿する</button>
             <button class="secondary" onclick="generatePatterns('short')">🤖 AI生成</button>
             <button class="secondary" onclick="generateImagesFromText('short')">🖼️ 画像生成（3種類）</button>
             <div id="short-loading" class="loading-message">⏳ 1分～2分程お待ちください...</div>
@@ -54,6 +53,7 @@
                 <button id="short-image-btn" class="secondary" style="margin-top:15px;display:none;" onclick="generateImages('short')">🖼️ 画像生成（3種類）</button>
                 <div id="short-image-loading" class="loading-message">⏳ 画像生成中（1〜2分）...</div>
             </div>
+            <button onclick="postText('short')" style="margin-top:20px;">📤 投稿する</button>
 
             <!-- 画像選択エリア -->
             <div id="short-image-section" style="margin-top:30px;display:none;">
@@ -103,7 +103,6 @@
                     <input type="datetime-local" id="news-schedule-time">
                     <span class="schedule-hint">⏰ 空欄 = 今すぐ投稿 ／ 日時入力 = 予約投稿</span>
                 </div>
-                <button onclick="postText('news')">📤 投稿する</button>
                 <button class="secondary" onclick="generatePatterns('news')">🤖 AI生成</button>
                 <div id="news-loading" class="loading-message">⏳ 1分～2分程お待ちください...</div>
             </div>
@@ -117,6 +116,7 @@
                 <button id="news-image-btn" class="secondary" style="margin-top:15px;display:none;" onclick="generateImages('news')">🖼️ 画像生成（3種類）</button>
                 <div id="news-image-loading" class="loading-message">⏳ 画像生成中（1〜2分）...</div>
             </div>
+            <button onclick="postText('news')" style="margin-top:20px;">📤 投稿する</button>
 
             <!-- 画像選択エリア -->
             <div id="news-image-section" style="margin-top:30px;display:none;">
