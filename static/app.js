@@ -249,7 +249,7 @@ function generatePatterns(section) {
                 div.style.cssText = `padding: 15px; background: ${idx === 0 ? '#667eea' : '#2a2a2a'}; border: 2px solid ${idx === 0 ? '#667eea' : '#444'}; border-radius: 6px; cursor: pointer;`;
                 const charCount = prompt.length;
                 const countColor = charCount > 280 ? '#f44336' : charCount > 250 ? '#ff9800' : '#4caf50';
-                div.innerHTML = `<div style="font-weight:600;color:#fff;margin-bottom:8px;">【パターン${idx + 1}】<span style="font-size:11px;color:${countColor};margin-left:8px;">${charCount}/280文字</span></div><div style="color:#fff;line-height:1.5;">${labels[idx]}</div>`;
+                div.innerHTML = `<div style="font-weight:600;color:#fff;margin-bottom:8px;">【パターン${idx + 1}】<span style="font-size:11px;color:${countColor};margin-left:8px;">${charCount}/280文字</span></div><div style="color:#fff;line-height:1.5;white-space:pre-wrap;">${labels[idx]}</div>`;
                 div.onclick = () => {
                     Array.from(list.children).forEach((el, i) => {
                         el.style.background = i === idx ? '#667eea' : '#2a2a2a';

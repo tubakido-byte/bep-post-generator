@@ -148,7 +148,8 @@ def _shorten_to_280(text: str) -> str:
     if len(text) <= 280:
         return text
     shortened = _call_gemini(
-        f"次の文章を、意味を保ちながら必ず280文字以内に短縮してください。文章が途中で切れないようにしてください。投稿文のみ出力。\n\n{text}"
+        f"次の文章を、意味を保ちながら必ず280文字以内に短縮してください。"
+        f"【重要】3段落構成（段落間は空行＝改行2つ）を必ず保持すること。文章が途中で切れないようにしてください。投稿文のみ出力。\n\n{text}"
     )
     return shortened[:280] if shortened else text[:277] + "..."
 
