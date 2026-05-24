@@ -66,8 +66,13 @@ def _call_gemini(prompt: str, retries: int = 2) -> str:
 
 def _generate_one_image(prompt: str) -> str:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key={GEMINI_API_KEY}"
+    safe_prompt = (
+        prompt +
+        " IMPORTANT: Do NOT include any text, letters, characters, words, signs, labels, or writing of any kind in the image. "
+        "No Chinese characters, no simplified Chinese, no kanji, no text overlays. Pure visual image only."
+    )
     payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
+        "contents": [{"parts": [{"text": safe_prompt}]}],
         "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]}
     }
     for attempt in range(3):
