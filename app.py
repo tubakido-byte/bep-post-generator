@@ -124,7 +124,8 @@ def api_generate():
 @app.route('/api/debug-image')
 def api_debug_image():
     import os
-    key = os.environ.get('OPENAI_API_KEY', '').strip().replace('\n','').replace('\r','').replace(' ','')
+    import re as _re
+    key = _re.sub(r'[^a-zA-Z0-9\-_]', '', os.environ.get('OPENAI_API_KEY', ''))
     key_preview = key[:10] + '...' + key[-4:] if len(key) > 14 else f'空({len(key)}文字)'
     try:
         import requests as req

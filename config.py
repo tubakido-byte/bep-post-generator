@@ -5,7 +5,8 @@ X_CONSUMER_SECRET = os.environ.get('X_CONSUMER_SECRET', '')
 X_ACCESS_TOKEN = os.environ.get('X_ACCESS_TOKEN', '')
 X_ACCESS_TOKEN_SECRET = os.environ.get('X_ACCESS_TOKEN_SECRET', '')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '').strip().replace('\n','').replace('\r','').replace(' ','')
+import re as _re
+OPENAI_API_KEY = _re.sub(r'[^a-zA-Z0-9\-_]', '', os.environ.get('OPENAI_API_KEY', ''))
 
 NEWS_SOURCES = {
     "🏛️ 産経新聞": [
