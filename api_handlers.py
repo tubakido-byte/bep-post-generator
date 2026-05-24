@@ -53,8 +53,7 @@ def post_to_x(text: str, image_b64: str = None, credentials: dict = None) -> dic
 def _call_gemini(prompt: str, retries: int = 2) -> str:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
     payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"thinkingConfig": {"thinkingBudget": 0}}
+        "contents": [{"parts": [{"text": prompt}]}]
     }
     for attempt in range(retries):
         try:
@@ -239,7 +238,7 @@ def get_news_articles(source: str) -> list:
         for attempt in range(2):
             try:
                 gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
-                r2 = requests.post(gemini_url, json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"thinkingConfig": {"thinkingBudget": 0}}}, timeout=30)
+                r2 = requests.post(gemini_url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=30)
                 if r2.status_code == 200:
                     resp_lines = r2.json()['candidates'][0]['content']['parts'][0]['text'].strip().split('\n')
                     parsed = [l.split('. ', 1)[-1].strip() for l in resp_lines if l.strip() and l.strip()[0].isdigit()]
@@ -335,7 +334,7 @@ def health_check() -> dict:
     results["env_vars"] = "OK" if not missing else f"未設定: {', '.join(missing)}"
 
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
         r = requests.post(url, json={"contents": [{"parts": [{"text": "ping"}]}]}, timeout=10)
         results["gemini"] = "OK" if r.status_code == 200 else f"エラー {r.status_code}"
     except Exception as e:
