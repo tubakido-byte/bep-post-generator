@@ -406,8 +406,7 @@ function postWithImage(section) {
     const text = section === 'short' ? shortText.value.trim() : opinionText.value.trim();
     const image = selectedImage[section];
     if (!image) return;
-    const scheduleEl = document.getElementById(`${section}-schedule-time`);
-    const scheduleTime = scheduleEl ? scheduleEl.value : '';
+    const scheduleTime = getScheduleTime(section);
 
     if (scheduleTime && !checkScheduleAccess(section)) return;
     if (!scheduleTime && !checkPostLimit(section)) return;
