@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, jsonify, redirect
-import os, requests, uuid, threading, hmac, hashlib, base64, time
+from flask import Flask, render_template, request, jsonify, redirect, session
+import os, requests, uuid, threading, hmac, hashlib, base64, time, sqlite3
 from datetime import datetime
 import pytz
 from requests_oauthlib import OAuth1
@@ -11,6 +11,8 @@ app.secret_key = os.environ.get('SECRET_KEY', 'xpost-secret-2024')
 PREMIUM_CODE = os.environ.get('PREMIUM_CODE', 'XPOST-PRO-2024')
 PREMIUM_CODE_BASIC = os.environ.get('PREMIUM_CODE_BASIC', 'XPOST-BASIC-2024')
 SWPM_LAUNCH_SECRET = os.environ.get('SWPM_LAUNCH_SECRET', 'xpost2024-swpm-8a3f-b2c1-d4e5f6')
+
+IMAGE_LIMITS = {0: 0, 2: 30, 6: 100}  # level: 月間上限枚数（回）
 
 def _verify_swpm_token(token: str) -> int:
     """SWPM levelを返す（無効なら-1）"""
@@ -27,6 +29,33 @@ def _verify_swpm_token(token: str) -> int:
     except Exception:
         return -1
 
+def _get_swpm_user_id(token: str) -> str:
+    try:
+        b64, _ = token.rsplit('.', 1)
+        data = base64.b64decode(b64).decode()
+        return data.split(':')[0]
+    except Exception:
+        return ''
+
+def _init_db():
+    db = sqlite3.connect('/tmp/usage.db')
+    db.execute('CREATE TABLE IF NOT EXISTS image_usage (user_id TEXT, ym TEXT, count INTEGER, PRIMARY KEY(user_id, ym))')
+    db.commit()
+    db.close()
+
+def _get_usage(user_id: str, ym: str) -> int:
+    db = sqlite3.connect('/tmp/usage.db')
+    row = db.execute('SELECT count FROM image_usage WHERE user_id=? AND ym=?', (user_id, ym)).fetchone()
+    db.close()
+    return row[0] if row else 0
+
+def _increment_usage(user_id: str, ym: str):
+    db = sqlite3.connect('/tmp/usage.db')
+    db.execute('INSERT INTO image_usage(user_id,ym,count) VALUES(?,?,1) ON CONFLICT(user_id,ym) DO UPDATE SET count=count+1', (user_id, ym))
+    db.commit()
+    db.close()
+
+_init_db()
 _jst = pytz.timezone('Asia/Tokyo')
 scheduled_posts = {}
 _timers = {}
@@ -86,6 +115,8 @@ def dashboard():
         lvl = _verify_swpm_token(t)
         if lvl >= 0:
             swpm_level = lvl
+            session['swpm_level'] = lvl
+            session['user_id'] = _get_swpm_user_id(t)
     return render_template('dashboard.html', swpm_level=swpm_level)
 
 @app.route('/api/health')
@@ -143,6 +174,14 @@ def api_debug_image():
 @app.route('/api/generate-images', methods=['POST'])
 def api_generate_images():
     try:
+        user_id = session.get('user_id', '')
+        level = session.get('swpm_level', 0)
+        ym = datetime.now(_jst).strftime('%Y-%m')
+        limit = IMAGE_LIMITS.get(level, 0)
+        if user_id and limit > 0:
+            usage = _get_usage(user_id, ym)
+            if usage >= limit:
+                return jsonify({'error': f'今月の画像生成上限（{limit}回）に達しました。来月までお待ちください。'})
         prompt = request.get_json().get('prompt', '')
         job_id = str(uuid.uuid4())[:8]
         image_jobs[job_id] = {'status': 'pending'}
@@ -150,6 +189,8 @@ def api_generate_images():
             try:
                 result = generate_images(prompt)
                 image_jobs[job_id] = {'status': 'done', **result}
+                if user_id and result.get('images'):
+                    _increment_usage(user_id, ym)
             except Exception as e:
                 image_jobs[job_id] = {'status': 'error', 'error': str(e)[:100]}
         t = threading.Thread(target=_run, daemon=True)
