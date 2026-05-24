@@ -6,7 +6,7 @@ import time
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from requests_oauthlib import OAuth1
-from config import X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, GEMINI_API_KEY, NEWS_SOURCES
+from config import X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET, GEMINI_API_KEY, OPENAI_API_KEY, NEWS_SOURCES
 
 def post_to_x(text: str, image_b64: str = None, credentials: dict = None) -> dict:
     # サーバーのCK/CSをベースに、ユーザーのAT/ATSがあれば優先使用
@@ -65,32 +65,30 @@ def _call_gemini(prompt: str, retries: int = 2) -> str:
     return ""
 
 def _generate_one_image(prompt: str) -> str:
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key={GEMINI_API_KEY}"
-    safe_prompt = (
-        prompt +
-        " ABSOLUTE RULE: Generate a purely visual image with ZERO text, ZERO characters, ZERO letters, ZERO words, "
-        "ZERO signs, ZERO banners, ZERO billboards, ZERO writing of any kind anywhere in the image. "
-        "No Japanese, no Chinese, no English, no any script. "
-        "All signs must be blank. All banners must be solid color with no writing. "
-        "Focus entirely on visual composition, colors, lighting, and subjects — no readable content whatsoever."
-    )
+    url = "https://api.openai.com/v1/images/generations"
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json"
+    }
     payload = {
-        "contents": [{"parts": [{"text": safe_prompt}]}],
-        "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]}
+        "model": "gpt-image-1",
+        "prompt": prompt,
+        "n": 1,
+        "size": "1024x1024"
     }
     for attempt in range(3):
         try:
-            r = requests.post(url, json=payload, timeout=90)
+            r = requests.post(url, json=payload, headers=headers, timeout=120)
             if r.status_code == 200:
-                for part in r.json()['candidates'][0]['content']['parts']:
-                    if 'inlineData' in part:
-                        return part['inlineData']['data']
+                b64 = r.json()['data'][0].get('b64_json', '')
+                if b64:
+                    return b64
             if r.status_code == 429 and attempt < 2:
-                time.sleep(3 + attempt * 2)
+                time.sleep(5 + attempt * 3)
                 continue
-            print(f"[DEBUG] Image gen error: {r.status_code} {r.text[:200]}")
+            print(f"[DEBUG] OpenAI image error: {r.status_code} {r.text[:200]}")
         except Exception as e:
-            print(f"[DEBUG] Image gen error (attempt {attempt+1}): {e}")
+            print(f"[DEBUG] OpenAI image error (attempt {attempt+1}): {e}")
             if attempt < 2:
                 time.sleep(2)
     return ""
