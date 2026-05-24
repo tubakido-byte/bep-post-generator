@@ -26,13 +26,15 @@ def post_to_x(text: str, image_b64: str = None, credentials: dict = None) -> dic
     try:
         media_ids = []
         if image_b64:
+            img_data = base64.b64decode(image_b64)
             up = requests.post(
                 "https://upload.twitter.com/1.1/media/upload.json",
-                files={"media": base64.b64decode(image_b64)},
+                files={"media": ("image.png", img_data, "image/png")},
                 auth=auth, timeout=60
             )
+            print(f"[DEBUG] media upload status={up.status_code} body={up.text[:200]}")
             if up.status_code != 200:
-                return {"success": False, "error": f"画像アップロード失敗: {up.text[:100]}"}
+                return {"success": False, "error": f"画像アップロード失敗({up.status_code}): {up.text[:150]}"}
             media_ids = [up.json()['media_id_string']]
 
         body = {"text": text[:280]}
