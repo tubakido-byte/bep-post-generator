@@ -152,21 +152,6 @@ def api_generate():
         msg = 'AI生成がタイムアウトしました。もう一度お試しください' if 'futures' in str(e).lower() or 'timeout' in str(e).lower() else f'生成エラー: {str(e)[:80]}'
         return jsonify({'prompts': [], 'error': msg})
 
-@app.route('/api/debug-gemini')
-def api_debug_gemini():
-    import os, re as _re, requests as req
-    raw_key = os.environ.get('GEMINI_API_KEY', '')
-    clean_key = _re.sub(r'[^a-zA-Z0-9\-_]', '', raw_key)
-    key_preview = clean_key[:10] + '...' + clean_key[-4:] if len(clean_key) > 14 else f'空({len(clean_key)}文字)'
-    raw_len = len(raw_key)
-    clean_len = len(clean_key)
-    try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={clean_key}"
-        r = req.post(url, json={"contents": [{"parts": [{"text": "ping"}]}]}, timeout=15)
-        return jsonify({'key': key_preview, 'raw_len': raw_len, 'clean_len': clean_len, 'status': r.status_code, 'body': r.text[:300]})
-    except Exception as e:
-        return jsonify({'key': key_preview, 'raw_len': raw_len, 'clean_len': clean_len, 'error': str(e)[:200]})
-
 @app.route('/api/debug-image')
 def api_debug_image():
     import os
