@@ -121,6 +121,24 @@ def api_generate():
         msg = 'AI生成がタイムアウトしました。もう一度お試しください' if 'futures' in str(e).lower() or 'timeout' in str(e).lower() else f'生成エラー: {str(e)[:80]}'
         return jsonify({'prompts': [], 'error': msg})
 
+@app.route('/api/debug-image')
+def api_debug_image():
+    import os
+    key = os.environ.get('OPENAI_API_KEY', '')
+    key_preview = key[:10] + '...' + key[-4:] if len(key) > 14 else f'空({len(key)}文字)'
+    try:
+        import requests as req
+        r = req.post('https://api.openai.com/v1/images/generations',
+            headers={'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'},
+            json={'model': 'gpt-image-1', 'prompt': 'a red apple', 'n': 1, 'size': '1024x1024'},
+            timeout=120)
+        d = r.json()
+        if 'data' in d:
+            return jsonify({'key': key_preview, 'status': 'OK', 'img_len': len(d['data'][0].get('b64_json',''))})
+        return jsonify({'key': key_preview, 'status': 'FAIL', 'error': d.get('error',{}).get('message','')[:200]})
+    except Exception as e:
+        return jsonify({'key': key_preview, 'status': 'EXCEPTION', 'error': str(e)[:200]})
+
 @app.route('/api/generate-images', methods=['POST'])
 def api_generate_images():
     try:
