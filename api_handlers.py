@@ -228,17 +228,25 @@ def get_news_articles(source: str) -> list:
 
     if '産経新聞' not in source:
         numbered = "\n".join([f"{i+1}. {a['title']}" for i, a in enumerate(raw)])
-        prompt = f"次の英語タイトルを日本語に翻訳してください。番号付きリストのみ出力。\n{numbered}"
-        try:
-            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-            r2 = requests.post(gemini_url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=20)
-            if r2.status_code == 200:
-                lines = r2.json()['candidates'][0]['content']['parts'][0]['text'].strip().split('\n')
-                parsed = [l.split('. ', 1)[-1].strip() for l in lines if l.strip() and l.strip()[0].isdigit()]
-                if len(parsed) == len(raw):
-                    return [{"title": t, "summary": '', "link": a['link']} for t, a in zip(parsed, raw)]
-        except Exception as e:
-            print(f"[DEBUG] Translate error: {e}")
+        prompt = (
+            f"次の英語ニュースタイトルを自然な日本語に翻訳してください。\n"
+            f"必ず「1. タイトル」の番号付きリスト形式で{len(raw)}件を出力してください。\n\n{numbered}"
+        )
+        for attempt in range(2):
+            try:
+                gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+                r2 = requests.post(gemini_url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=30)
+                if r2.status_code == 200:
+                    resp_lines = r2.json()['candidates'][0]['content']['parts'][0]['text'].strip().split('\n')
+                    parsed = [l.split('. ', 1)[-1].strip() for l in resp_lines if l.strip() and l.strip()[0].isdigit()]
+                    if parsed:
+                        result = []
+                        for i, a in enumerate(raw):
+                            title = parsed[i] if i < len(parsed) else a['title']
+                            result.append({"title": title, "summary": '', "link": a['link']})
+                        return result
+            except Exception as e:
+                print(f"[DEBUG] Translate error (attempt {attempt+1}): {e}")
 
     return [{"title": a['title'], "summary": '', "link": a['link']} for a in raw]
 
