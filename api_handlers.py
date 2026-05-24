@@ -68,10 +68,10 @@ def _generate_one_image(prompt: str) -> str:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key={GEMINI_API_KEY}"
     safe_prompt = (
         prompt +
-        " IMPORTANT: If any text or characters appear in the image, they MUST be written in Japanese only "
-        "(Japanese kanji, hiragana, or katakana). "
+        " IMPORTANT: If any text or characters appear in the image, use Japanese (kanji, hiragana, katakana), "
+        "English, or katakana-English (wasei-eigo) only. "
         "STRICTLY FORBIDDEN: simplified Chinese characters, traditional Chinese characters, Chinese text of any kind. "
-        "All signage, labels, words, and text visible in the image must be in Japanese language only."
+        "All signage, labels, and text in the image must be in Japanese or English only — absolutely no Chinese."
     )
     payload = {
         "contents": [{"parts": [{"text": safe_prompt}]}],
