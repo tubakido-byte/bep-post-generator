@@ -51,15 +51,20 @@ def post_to_x(text: str, image_b64: str = None, credentials: dict = None) -> dic
         return {"success": False, "error": str(e)}
 
 def _call_gemini(prompt: str, retries: int = 2) -> str:
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"thinkingConfig": {"thinkingBudget": 0}}
+    }
     for attempt in range(retries):
         try:
-            r = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=20)
+            r = requests.post(url, json=payload, timeout=25)
             if r.status_code == 200:
                 return r.json()['candidates'][0]['content']['parts'][0]['text'].strip()
             if r.status_code == 429 and attempt < retries - 1:
                 time.sleep(2)
                 continue
+            print(f"[DEBUG] Gemini error: {r.status_code} {r.text[:100]}")
         except Exception as e:
             print(f"[DEBUG] Gemini error (attempt {attempt+1}): {e}")
             if attempt < retries - 1:
@@ -190,8 +195,7 @@ def generate_posts(topic: str) -> dict:
         if p is None:
             result = _call_gemini(prompts_list[i])
             patterns[i] = _shorten_to_280(result) if result else None
-    result = [p for p in patterns if p]
-    posts = result if result else [topic]
+    posts = [p for p in patterns if p]
     return {"prompts": posts, "labels": posts}
 
 def _fetch_rss(url: str) -> list:
@@ -234,8 +238,8 @@ def get_news_articles(source: str) -> list:
         )
         for attempt in range(2):
             try:
-                gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-                r2 = requests.post(gemini_url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=30)
+                gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+                r2 = requests.post(gemini_url, json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"thinkingConfig": {"thinkingBudget": 0}}}, timeout=30)
                 if r2.status_code == 200:
                     resp_lines = r2.json()['candidates'][0]['content']['parts'][0]['text'].strip().split('\n')
                     parsed = [l.split('. ', 1)[-1].strip() for l in resp_lines if l.strip() and l.strip()[0].isdigit()]
