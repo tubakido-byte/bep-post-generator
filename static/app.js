@@ -282,102 +282,99 @@ function generatePatterns(section) {
 
 // ===== 画像生成 =====
 
+function _displayImages(section, data, loadingId, btn) {
+    if (loadingId) document.getElementById(loadingId).classList.remove('show');
+    if (btn) btn.disabled = false;
+    if (data.error || !data.images || !data.images.length) {
+        showResult(`${section}-result`, '✗ 画像を生成できませんでした。再度お試しください', 'error'); return;
+    }
+    const list = document.getElementById(`${section}-image-list`);
+    list.innerHTML = '';
+    const postBtn = document.getElementById(`${section}-post-with-image-btn`);
+    postBtn.style.display = 'none';
+    selectedImage[section] = null;
+    const title = data.title || '';
+    (data.images || []).forEach(b64 => {
+        addTitleToImage(b64, title, composited => {
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'cursor:pointer;border:3px solid #444;border-radius:8px;overflow:hidden;';
+            const img = document.createElement('img');
+            img.src = `data:image/png;base64,${composited}`;
+            img.style.cssText = 'width:100%;display:block;';
+            wrapper.appendChild(img);
+            wrapper.onclick = () => {
+                list.querySelectorAll('div').forEach(el => el.style.borderColor = '#444');
+                wrapper.style.borderColor = '#667eea';
+                selectedImage[section] = composited;
+                postBtn.style.display = 'block';
+            };
+            list.appendChild(wrapper);
+        });
+    });
+    document.getElementById(`${section}-image-section`).style.display = 'block';
+}
+
+function _pollImageJob(jobId, section, loadingId, btn, attempt) {
+    if (attempt > 40) {
+        if (loadingId) document.getElementById(loadingId).classList.remove('show');
+        if (btn) btn.disabled = false;
+        showResult(`${section}-result`, '✗ 画像生成がタイムアウトしました。再度お試しください', 'error');
+        return;
+    }
+    fetch(`/api/image-status/${jobId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'done') {
+                _displayImages(section, data, loadingId, btn);
+            } else if (data.status === 'error') {
+                if (loadingId) document.getElementById(loadingId).classList.remove('show');
+                if (btn) btn.disabled = false;
+                showResult(`${section}-result`, `✗ ${data.error || '画像生成に失敗しました'}`, 'error');
+            } else {
+                setTimeout(() => _pollImageJob(jobId, section, loadingId, btn, attempt + 1), 3000);
+            }
+        })
+        .catch(() => setTimeout(() => _pollImageJob(jobId, section, loadingId, btn, attempt + 1), 3000));
+}
+
+function _startImageJob(prompt, section, loadingId, btn) {
+    fetch('/api/generate-images', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({prompt})})
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                if (loadingId) document.getElementById(loadingId).classList.remove('show');
+                if (btn) btn.disabled = false;
+                showResult(`${section}-result`, `✗ ${data.error}`, 'error'); return;
+            }
+            _pollImageJob(data.job_id, section, loadingId, btn, 0);
+        })
+        .catch(() => {
+            if (loadingId) document.getElementById(loadingId).classList.remove('show');
+            if (btn) btn.disabled = false;
+            showResult(`${section}-result`, '✗ 画像生成を開始できませんでした。再度お試しください', 'error');
+        });
+}
+
 function generateImages(section) {
     if (!checkImageAccess(section)) return;
-
     const prompt = selectedPrompt[section];
     if (!prompt) return;
     const btn = document.getElementById(`${section}-image-btn`);
     btn.disabled = true;
-    document.getElementById(`${section}-image-loading`).classList.add('show');
-
-    fetch('/api/generate-images', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({prompt})})
-        .then(r => r.json())
-        .then(data => {
-            btn.disabled = false;
-            document.getElementById(`${section}-image-loading`).classList.remove('show');
-
-            if (data.error) { showResult(`${section}-result`, `✗ ${data.error}`, 'error'); return; }
-            const list = document.getElementById(`${section}-image-list`);
-            list.innerHTML = '';
-            const postBtn = document.getElementById(`${section}-post-with-image-btn`);
-            postBtn.style.display = 'none';
-            selectedImage[section] = null;
-            if (!data.images || !data.images.length) { showResult(`${section}-result`, '✗ 画像を生成できませんでした。再度お試しください', 'error'); return; }
-
-            const title = data.title || '';
-            (data.images || []).forEach(b64 => {
-                addTitleToImage(b64, title, composited => {
-                    const wrapper = document.createElement('div');
-                    wrapper.style.cssText = 'cursor:pointer;border:3px solid #444;border-radius:8px;overflow:hidden;';
-                    const img = document.createElement('img');
-                    img.src = `data:image/png;base64,${composited}`;
-                    img.style.cssText = 'width:100%;display:block;';
-                    wrapper.appendChild(img);
-                    wrapper.onclick = () => {
-                        list.querySelectorAll('div').forEach(el => el.style.borderColor = '#444');
-                        wrapper.style.borderColor = '#667eea';
-                        selectedImage[section] = composited;
-                        postBtn.style.display = 'block';
-                    };
-                    list.appendChild(wrapper);
-                });
-            });
-
-            document.getElementById(`${section}-image-section`).style.display = 'block';
-        })
-        .catch(() => {
-            btn.disabled = false;
-            document.getElementById(`${section}-image-loading`).classList.remove('show');
-            showResult(`${section}-result`, '✗ 画像生成がタイムアウトしました。再度お試しください', 'error');
-        });
+    const loadingId = `${section}-image-loading`;
+    document.getElementById(loadingId).classList.add('show');
+    _startImageJob(prompt, section, loadingId, btn);
 }
 
 function generateImagesFromText(section) {
     if (!checkImageAccess(section)) return;
-
     const textarea = section === 'short' ? shortText : opinionText;
     const prompt = textarea.value.trim();
     if (!prompt) { showResult(`${section}-result`, 'テキストを入力してください', 'error'); return; }
     selectedPrompt[section] = prompt;
     const loadingId = `${section}-direct-image-loading`;
     document.getElementById(loadingId).classList.add('show');
-    fetch('/api/generate-images', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({prompt})})
-        .then(r => r.json())
-        .then(data => {
-            document.getElementById(loadingId).classList.remove('show');
-            if (data.error || !data.images || !data.images.length) {
-                showResult(`${section}-result`, '✗ 画像を生成できませんでした。再度お試しください', 'error'); return;
-            }
-            const list = document.getElementById(`${section}-image-list`);
-            list.innerHTML = '';
-            const postBtn = document.getElementById(`${section}-post-with-image-btn`);
-            postBtn.style.display = 'none';
-            selectedImage[section] = null;
-            const title = data.title || '';
-            (data.images || []).forEach(b64 => {
-                addTitleToImage(b64, title, composited => {
-                    const wrapper = document.createElement('div');
-                    wrapper.style.cssText = 'cursor:pointer;border:3px solid #444;border-radius:8px;overflow:hidden;';
-                    const img = document.createElement('img');
-                    img.src = `data:image/png;base64,${composited}`;
-                    img.style.cssText = 'width:100%;display:block;';
-                    wrapper.appendChild(img);
-                    wrapper.onclick = () => {
-                        list.querySelectorAll('div').forEach(el => el.style.borderColor = '#444');
-                        wrapper.style.borderColor = '#667eea';
-                        selectedImage[section] = composited;
-                        postBtn.style.display = 'block';
-                    };
-                    list.appendChild(wrapper);
-                });
-            });
-            document.getElementById(`${section}-image-section`).style.display = 'block';
-        })
-        .catch(() => {
-            document.getElementById(loadingId).classList.remove('show');
-            showResult(`${section}-result`, '✗ 画像生成がタイムアウトしました。再度お試しください', 'error');
-        });
+    _startImageJob(prompt, section, loadingId, null);
 }
 
 function addTitleToImage(b64, text, callback) {

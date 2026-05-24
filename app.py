@@ -30,6 +30,7 @@ def _verify_swpm_token(token: str) -> int:
 _jst = pytz.timezone('Asia/Tokyo')
 scheduled_posts = {}
 _timers = {}
+image_jobs = {}
 
 def _execute_scheduled_post(job_id, text, image='', credentials=None):
     result = post_to_x(text, image, credentials)
@@ -124,12 +125,26 @@ def api_generate():
 def api_generate_images():
     try:
         prompt = request.get_json().get('prompt', '')
-        result = generate_images(prompt)
-        if not result.get('images'):
-            return jsonify({'images': [], 'error': '画像生成に失敗しました。Gemini APIの制限か一時的なエラーです'})
-        return jsonify(result)
+        job_id = str(uuid.uuid4())[:8]
+        image_jobs[job_id] = {'status': 'pending'}
+        def _run():
+            try:
+                result = generate_images(prompt)
+                image_jobs[job_id] = {'status': 'done', **result}
+            except Exception as e:
+                image_jobs[job_id] = {'status': 'error', 'error': str(e)[:100]}
+        t = threading.Thread(target=_run, daemon=True)
+        t.start()
+        return jsonify({'job_id': job_id, 'status': 'pending'})
     except Exception as e:
-        return jsonify({'images': [], 'error': f'画像生成エラー: {str(e)[:100]}'})
+        return jsonify({'error': f'画像生成開始エラー: {str(e)[:100]}'})
+
+@app.route('/api/image-status/<job_id>')
+def api_image_status(job_id):
+    job = image_jobs.get(job_id)
+    if not job:
+        return jsonify({'status': 'error', 'error': 'ジョブが見つかりません'})
+    return jsonify(job)
 
 @app.route('/api/schedule', methods=['POST'])
 def api_schedule():
