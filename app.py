@@ -3,7 +3,7 @@ import os, requests, uuid, threading, hmac, hashlib, base64, time, sqlite3
 from datetime import datetime
 import pytz
 from requests_oauthlib import OAuth1
-from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles, health_check, surge_long_post, surge_buzz, surge_self_quote, surge_inspo, surge_profile_check
+from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles, health_check, surge_long_post, surge_buzz, surge_self_quote, surge_inspo, surge_profile_check, generate_thread, post_thread_to_x, STUDIO_KANOU_BOOKS
 from config import GEMINI_API_KEY
 
 app = Flask(__name__)
@@ -324,6 +324,34 @@ def api_surge_profile_check():
         return jsonify(surge_profile_check(profile, pinned_post, context))
     except Exception as e:
         return jsonify({'diagnosis': '', 'error': str(e)[:100]})
+
+@app.route('/api/thread/books')
+def api_thread_books():
+    return jsonify({'books': STUDIO_KANOU_BOOKS})
+
+@app.route('/api/generate-thread', methods=['POST'])
+def api_generate_thread():
+    try:
+        data = request.get_json()
+        book_title = data.get('book_title', '').strip()
+        amazon_url = data.get('amazon_url', '').strip()
+        if not book_title:
+            return jsonify({'tweets': [], 'error': '書籍タイトルが未入力です'})
+        return jsonify(generate_thread(book_title, amazon_url))
+    except Exception as e:
+        return jsonify({'tweets': [], 'error': str(e)[:100]})
+
+@app.route('/api/post-thread', methods=['POST'])
+def api_post_thread():
+    try:
+        data = request.get_json()
+        tweets = data.get('tweets', [])
+        credentials = data.get('credentials')
+        if not tweets:
+            return jsonify({'success': False, 'error': 'ツイートが空です'})
+        return jsonify(post_thread_to_x(tweets, credentials))
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)[:100]})
 
 @app.route('/manual/free')
 def manual_free():

@@ -326,6 +326,96 @@ def surge_profile_check(profile: str, pinned_post: str = '', context: str = '') 
     result = _call_gemini(prompt)
     return {"diagnosis": result} if result else {"diagnosis": "", "error": "生成失敗"}
 
+STUDIO_KANOU_BOOKS = [
+    {"title": "残業代・未払い給料を自分で取り戻す！弁護士いらずのテンプレート完全マニュアル", "asin": "B0H2VWPJ41"},
+    {"title": "敷金を取り戻す！賃貸退去の不当請求を断る完全マニュアル", "asin": "B0H2WJ18W3"},
+    {"title": "不当解雇・パワハラを自分で戦う！証拠収集から内容証明まで完全マニュアル", "asin": "B0GX5CRP1T"},
+    {"title": "協議離婚を自分でできる！財産分与・養育費・合意書テンプレート集", "asin": "B0H2XSZHN2"},
+    {"title": "遺言書・遺産分割 揉めない相続を自分で準備する！完全テンプレート集", "asin": "B0H2Y3997T"},
+    {"title": "騒音・近隣・マンショントラブル 解決テンプレート集", "asin": "B0H2ZM4XQX"},
+    {"title": "交通事故 示談書・損害賠償請求テンプレート集", "asin": "B0H2ZMN8LT"},
+    {"title": "示談書・合意書・誓約書 すぐ使えるテンプレート大全", "asin": "B0GX2X91L6"},
+    {"title": "悪質商法・投資詐欺 クーリングオフ・返金請求マニュアル", "asin": "B0H2ZGSNZQ"},
+    {"title": "SNS誹謗中傷・ネットトラブルを自分で戦う！", "asin": "B0H2Z5YCG1"},
+    {"title": "そのまま使える！内容証明テンプレート集", "asin": "B0G5YZ532Y"},
+    {"title": "2026年度版 裁判所が教えてくれない民事訴訟の極意", "asin": "B0GF7P2G6S"},
+]
+
+
+def generate_thread(book_title: str, amazon_url: str) -> dict:
+    prompt = (
+        f"あなたはKindle電子書籍のSNSマーケターです。"
+        f"以下の書籍をXのスレッドで紹介する5投稿を生成してください。\n\n"
+        f"【書籍タイトル】{book_title}\n"
+        f"【購入リンク】{amazon_url}\n\n"
+        f"【スレッド構成（必ず守ること）】\n"
+        f"投稿①（フック）：「弁護士費用ゼロ」シリーズの世界観を示す衝撃的な一行＋問いかけ。140文字以内。\n"
+        f"投稿②（問題提起）：読者が直面する具体的な状況・損失感を描写。140文字以内。\n"
+        f"投稿③（解決策）：この本で何ができるか・テンプレートの具体的な価値。140文字以内。\n"
+        f"投稿④（社会的証明）：Kindle Unlimitedで読み放題・自分で解決できる安心感。140文字以内。\n"
+        f"投稿⑤（CTA）：今すぐ読める・損しない・最後に購入リンクを含む行動喚起。140文字以内。\n\n"
+        f"【厳守ルール】\n"
+        f"・各投稿は必ず140文字以内\n"
+        f"・投稿と投稿の間は「---」の区切り線のみ（他の文字は不要）\n"
+        f"・「投稿①:」などのラベル・番号は一切不要。テキストのみ出力\n"
+        f"・投稿⑤の最後に購入リンク（{amazon_url}）を必ず含める\n"
+        f"・弁護士費用ゼロ・自分で解決・テンプレートがキーメッセージ\n"
+        f"・絵文字を効果的に使用\n"
+    )
+    result = _call_gemini(prompt)
+    if not result:
+        return {"tweets": [], "error": "生成失敗"}
+    tweets = [t.strip() for t in result.split('---') if t.strip()]
+    tweets = [t[:280] for t in tweets[:5]]
+    return {"tweets": tweets}
+
+
+def post_thread_to_x(tweets: list, credentials: dict = None) -> dict:
+    ck = X_CONSUMER_KEY
+    cs = X_CONSUMER_SECRET
+    if credentials and credentials.get('at') and credentials.get('ats'):
+        at = credentials['at']
+        ats = credentials['ats']
+        if credentials.get('ck') and credentials.get('cs'):
+            ck = credentials['ck']
+            cs = credentials['cs']
+    else:
+        at = X_ACCESS_TOKEN
+        ats = X_ACCESS_TOKEN_SECRET
+    auth = OAuth1(ck, cs, at, ats)
+
+    results = []
+    prev_id = None
+    for i, text in enumerate(tweets):
+        body = {"text": text[:280]}
+        if prev_id:
+            body["reply"] = {"in_reply_to_tweet_id": prev_id}
+        try:
+            r = requests.post("https://api.twitter.com/2/tweets", json=body, auth=auth, timeout=30)
+            if r.status_code == 201:
+                tweet_id = r.json()['data']['id']
+                prev_id = tweet_id
+                results.append({"success": True, "tweet_id": tweet_id, "index": i})
+            else:
+                results.append({"success": False, "error": r.text[:100], "index": i})
+                break
+            if i < len(tweets) - 1:
+                time.sleep(1)
+        except Exception as e:
+            results.append({"success": False, "error": str(e), "index": i})
+            break
+
+    success_count = sum(1 for r in results if r.get('success'))
+    first_url = f"https://x.com/i/web/status/{results[0]['tweet_id']}" if results and results[0].get('success') else ''
+    return {
+        "success": success_count > 0,
+        "posted": success_count,
+        "total": len(tweets),
+        "results": results,
+        "thread_url": first_url
+    }
+
+
 def health_check() -> dict:
     results = {"gemini": "NG", "x_api": "NG", "env_vars": "NG", "overall": "NG"}
 

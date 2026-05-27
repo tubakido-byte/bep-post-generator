@@ -568,7 +568,7 @@ function renderAccountList() {
 function updateAccountSelectors() {
     const accounts = getAccounts();
     const isPremium = getPlan() === 'premium';
-    ['short','news'].forEach(section => {
+    ['short','news','thread'].forEach(section => {
         const row = document.getElementById(`${section}-account-row`);
         const select = document.getElementById(`${section}-account-select`);
         if (!row || !select) return;
@@ -759,6 +759,118 @@ function recordPost() {
   const cal = JSON.parse(localStorage.getItem('xpost_calendar') || '{}');
   cal[today] = (cal[today] || 0) + 1;
   localStorage.setItem('xpost_calendar', JSON.stringify(cal));
+}
+
+// ===== スレッド投稿 =====
+
+(function loadThreadBooks() {
+    fetch('/api/thread/books')
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('thread-book-select');
+            if (!select) return;
+            data.books.forEach(book => {
+                const opt = document.createElement('option');
+                opt.value = book.asin;
+                opt.textContent = book.title;
+                select.appendChild(opt);
+            });
+        })
+        .catch(() => {});
+})();
+
+function generateThread() {
+    const select = document.getElementById('thread-book-select');
+    const asin = select.value;
+    const title = select.options[select.selectedIndex]?.text;
+    if (!asin) { showResult('thread-result', '書籍を選択してください', 'error'); return; }
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '🤖 生成中...';
+    document.getElementById('thread-loading').classList.add('show');
+    document.getElementById('thread-preview').style.display = 'none';
+
+    const amazonUrl = `https://www.amazon.co.jp/dp/${asin}`;
+
+    fetch('/api/generate-thread', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({book_title: title, amazon_url: amazonUrl})
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.textContent = '🤖 スレッドを生成';
+        document.getElementById('thread-loading').classList.remove('show');
+
+        if (data.error || !data.tweets || !data.tweets.length) {
+            showResult('thread-result', `✗ ${data.error || '生成失敗'}`, 'error');
+            return;
+        }
+
+        const list = document.getElementById('thread-tweets-list');
+        list.innerHTML = '';
+        data.tweets.forEach((tweet, idx) => {
+            const div = document.createElement('div');
+            div.style.cssText = 'margin-bottom:16px;';
+            div.innerHTML = `
+                <div style="font-size:12px;color:#888;margin-bottom:4px;">投稿 ${idx + 1} / ${data.tweets.length}</div>
+                <textarea id="thread-tweet-${idx}" rows="4" style="width:100%;padding:10px;border-radius:8px;border:1px solid #444;background:#0d0d1a;color:#e0e0e0;font-size:14px;resize:vertical;box-sizing:border-box;">${tweet}</textarea>
+                <div style="font-size:11px;color:#888;text-align:right;margin-top:2px;"><span id="thread-count-${idx}">${tweet.length}</span> / 280文字</div>
+            `;
+            div.querySelector(`#thread-tweet-${idx}`).addEventListener('input', function() {
+                document.getElementById(`thread-count-${idx}`).textContent = this.value.length;
+            });
+            list.appendChild(div);
+        });
+
+        document.getElementById('thread-preview').style.display = 'block';
+        showResult('thread-result', `✓ ${data.tweets.length}投稿のスレッドを生成しました。内容を確認・編集してから投稿してください。`, 'success');
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.textContent = '🤖 スレッドを生成';
+        document.getElementById('thread-loading').classList.remove('show');
+        showResult('thread-result', '✗ 通信エラー', 'error');
+    });
+}
+
+function postThread() {
+    const list = document.getElementById('thread-tweets-list');
+    const textareas = list.querySelectorAll('textarea');
+    const tweets = Array.from(textareas).map(ta => ta.value.trim()).filter(t => t);
+    if (!tweets.length) { showResult('thread-result', '投稿するテキストがありません', 'error'); return; }
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '📤 投稿中...';
+
+    const credentials = getSelectedCredentials('thread');
+
+    fetch('/api/post-thread', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tweets, credentials})
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.textContent = '📤 スレッドを投稿する';
+        if (data.success || data.posted > 0) {
+            recordPost();
+            const url = data.thread_url ? ` <a href="${data.thread_url}" target="_blank" style="color:#1da1f2;">Xで確認する →</a>` : '';
+            showResult('thread-result', `✓ ${data.posted}/${data.total}投稿完了！${url}`, 'success');
+        } else {
+            const errMsg = data.results?.[0]?.error || data.error || '投稿失敗';
+            showResult('thread-result', `✗ 投稿失敗: ${errMsg}`, 'error');
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.textContent = '📤 スレッドを投稿する';
+        showResult('thread-result', '✗ 通信エラー', 'error');
+    });
 }
 
 function renderCalendar() {
