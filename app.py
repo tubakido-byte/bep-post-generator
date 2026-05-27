@@ -347,12 +347,15 @@ def threads_auth():
 
 @app.route('/threads/callback')
 def threads_callback():
+    all_params = dict(request.args)
     code = request.args.get('code', '')
     error = request.args.get('error', '')
+    error_reason = request.args.get('error_reason', '')
+    error_description = request.args.get('error_description', '')
     if error:
-        return f'<h2>認証エラー: {error}</h2>', 400
+        return f'<h2>認証エラー: {error}</h2><p>{error_reason}: {error_description}</p><p>全パラメータ: {all_params}</p>', 400
     if not code:
-        return '<h2>認証コードが見つかりません</h2>', 400
+        return f'<h2>認証コードが見つかりません</h2><p>受信パラメータ: {all_params}</p>', 400
     r = requests.post('https://graph.threads.net/oauth/access_token', data={
         'client_id': THREADS_APP_ID,
         'client_secret': THREADS_APP_SECRET,
