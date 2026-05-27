@@ -763,6 +763,22 @@ function recordPost() {
 
 // ===== スレッド投稿 =====
 
+(function loadAutoThreadStatus() {
+    fetch('/api/auto-thread/status')
+        .then(r => r.json())
+        .then(data => {
+            const box = document.getElementById('auto-thread-status');
+            if (!box) return;
+            box.innerHTML = `
+                <div style="font-size:14px;font-weight:600;color:#4caf50;margin-bottom:10px;">🤖 自動投稿 — 毎日 朝7:00</div>
+                <div style="font-size:13px;color:#e0e0e0;margin-bottom:6px;">📖 <strong>本日の書籍：</strong>${data.today_book}</div>
+                <div style="font-size:12px;color:#aaa;">➡ 明日：${data.next_book}</div>
+                <div style="font-size:11px;color:#666;margin-top:6px;">${data.today_index + 1} / ${data.total_books} 冊目</div>
+            `;
+        })
+        .catch(() => {});
+})();
+
 (function loadThreadBooks() {
     fetch('/api/thread/books')
         .then(r => r.json())

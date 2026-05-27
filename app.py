@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, redirect, session
 import os, requests, uuid, threading, hmac, hashlib, base64, time, sqlite3
-from datetime import datetime
+from datetime import datetime, date as _date_cls
 import pytz
 from requests_oauthlib import OAuth1
 from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles, health_check, surge_long_post, surge_buzz, surge_self_quote, surge_inspo, surge_profile_check, generate_thread, post_thread_to_x, STUDIO_KANOU_BOOKS
@@ -8,6 +8,12 @@ from config import GEMINI_API_KEY
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'xpost-secret-2024')
+THREAD_CRON_SECRET = os.environ.get('THREAD_CRON_SECRET', 'kanou-thread-auto-7am')
+_THREAD_EPOCH = _date_cls(2026, 5, 28)
+
+def _get_today_book():
+    idx = max(0, (_date_cls.today() - _THREAD_EPOCH).days) % len(STUDIO_KANOU_BOOKS)
+    return idx, STUDIO_KANOU_BOOKS[idx]
 PREMIUM_CODE = os.environ.get('PREMIUM_CODE', 'XPOST-PRO-2024')
 PREMIUM_CODE_BASIC = os.environ.get('PREMIUM_CODE_BASIC', 'XPOST-BASIC-2024')
 SWPM_LAUNCH_SECRET = os.environ.get('SWPM_LAUNCH_SECRET', 'xpost2024-swpm-8a3f-b2c1-d4e5f6')
@@ -324,6 +330,37 @@ def api_surge_profile_check():
         return jsonify(surge_profile_check(profile, pinned_post, context))
     except Exception as e:
         return jsonify({'diagnosis': '', 'error': str(e)[:100]})
+
+@app.route('/api/auto-thread/status')
+def api_auto_thread_status():
+    idx, book = _get_today_book()
+    next_idx = (idx + 1) % len(STUDIO_KANOU_BOOKS)
+    return jsonify({
+        'today_index': idx,
+        'today_book': book['title'],
+        'next_book': STUDIO_KANOU_BOOKS[next_idx]['title'],
+        'total_books': len(STUDIO_KANOU_BOOKS)
+    })
+
+@app.route('/api/auto-thread/run')
+def api_auto_thread_run():
+    secret = request.args.get('secret', '')
+    if secret != THREAD_CRON_SECRET:
+        return jsonify({'error': '認証エラー'}), 403
+    idx, book = _get_today_book()
+    amazon_url = f"https://www.amazon.co.jp/dp/{book['asin']}"
+    thread_result = generate_thread(book['title'], amazon_url)
+    if not thread_result.get('tweets'):
+        return jsonify({'success': False, 'error': 'スレッド生成失敗', 'book': book['title']})
+    post_result = post_thread_to_x(thread_result['tweets'])
+    return jsonify({
+        'success': post_result.get('success', False),
+        'book': book['title'],
+        'book_index': idx,
+        'posted': post_result.get('posted', 0),
+        'total': post_result.get('total', 0),
+        'thread_url': post_result.get('thread_url', '')
+    })
 
 @app.route('/api/thread/books')
 def api_thread_books():
