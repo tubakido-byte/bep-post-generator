@@ -342,6 +342,32 @@ STUDIO_KANOU_BOOKS = [
 ]
 
 
+def post_to_threads(text: str) -> dict:
+    import os as _os
+    access_token = _os.environ.get('THREADS_ACCESS_TOKEN', '')
+    user_id = _os.environ.get('THREADS_USER_ID', '')
+    if not access_token or not user_id:
+        return {"success": False, "error": "THREADS_ACCESS_TOKEN または THREADS_USER_ID が未設定"}
+    r1 = requests.post(
+        f"https://graph.threads.net/v1.0/{user_id}/threads",
+        params={'media_type': 'TEXT', 'text': text[:500], 'access_token': access_token},
+        timeout=30
+    )
+    if r1.status_code != 200:
+        return {"success": False, "error": f"コンテナ作成失敗: {r1.text[:100]}"}
+    creation_id = r1.json().get('id', '')
+    time.sleep(2)
+    r2 = requests.post(
+        f"https://graph.threads.net/v1.0/{user_id}/threads_publish",
+        params={'creation_id': creation_id, 'access_token': access_token},
+        timeout=30
+    )
+    if r2.status_code == 200:
+        post_id = r2.json().get('id', '')
+        return {"success": True, "post_id": post_id}
+    return {"success": False, "error": f"公開失敗: {r2.text[:100]}"}
+
+
 def generate_thread(book_title: str, amazon_url: str) -> dict:
     prompt = (
         f"あなたはKindle電子書籍のSNSマーケターです。"

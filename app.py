@@ -3,13 +3,16 @@ import os, requests, uuid, threading, hmac, hashlib, base64, time, sqlite3
 from datetime import datetime, date as _date_cls
 import pytz
 from requests_oauthlib import OAuth1
-from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles, health_check, surge_long_post, surge_buzz, surge_self_quote, surge_inspo, surge_profile_check, generate_thread, post_thread_to_x, STUDIO_KANOU_BOOKS
+from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles, health_check, surge_long_post, surge_buzz, surge_self_quote, surge_inspo, surge_profile_check, generate_thread, post_thread_to_x, post_to_threads, STUDIO_KANOU_BOOKS
 from config import GEMINI_API_KEY
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'xpost-secret-2024')
 THREAD_CRON_SECRET = os.environ.get('THREAD_CRON_SECRET', 'kanou-thread-auto-7am')
 _THREAD_EPOCH = _date_cls(2026, 5, 28)
+THREADS_APP_ID = os.environ.get('THREADS_APP_ID', '2386770295177388')
+THREADS_APP_SECRET = os.environ.get('THREADS_APP_SECRET', '')
+THREADS_REDIRECT_URI = os.environ.get('THREADS_REDIRECT_URI', 'https://bep-post-generator.onrender.com/threads/callback')
 
 def _get_today_book():
     idx = max(0, (_date_cls.today() - _THREAD_EPOCH).days) % len(STUDIO_KANOU_BOOKS)
@@ -331,6 +334,53 @@ def api_surge_profile_check():
     except Exception as e:
         return jsonify({'diagnosis': '', 'error': str(e)[:100]})
 
+@app.route('/threads/auth')
+def threads_auth():
+    auth_url = (
+        f"https://threads.net/oauth/authorize"
+        f"?client_id={THREADS_APP_ID}"
+        f"&redirect_uri={THREADS_REDIRECT_URI}"
+        f"&scope=threads_basic,threads_content_publish"
+        f"&response_type=code"
+    )
+    return redirect(auth_url)
+
+@app.route('/threads/callback')
+def threads_callback():
+    code = request.args.get('code', '')
+    error = request.args.get('error', '')
+    if error:
+        return f'<h2>認証エラー: {error}</h2>', 400
+    if not code:
+        return '<h2>認証コードが見つかりません</h2>', 400
+    r = requests.post('https://graph.threads.net/oauth/access_token', data={
+        'client_id': THREADS_APP_ID,
+        'client_secret': THREADS_APP_SECRET,
+        'grant_type': 'authorization_code',
+        'redirect_uri': THREADS_REDIRECT_URI,
+        'code': code
+    }, timeout=30)
+    if r.status_code != 200:
+        return f'<h2>トークン取得失敗: {r.text[:200]}</h2>', 400
+    data = r.json()
+    short_token = data.get('access_token', '')
+    user_id = str(data.get('user_id', ''))
+    r2 = requests.get('https://graph.threads.net/access_token', params={
+        'grant_type': 'th_exchange_token',
+        'client_secret': THREADS_APP_SECRET,
+        'access_token': short_token
+    }, timeout=30)
+    long_token = r2.json().get('access_token', short_token) if r2.status_code == 200 else short_token
+    return f'''<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:800px;margin:40px auto;padding:20px;">
+    <h2>✅ Threads認証完了！</h2>
+    <p>以下の2つをRenderの環境変数に設定してください。</p>
+    <p><strong>THREADS_USER_ID:</strong></p>
+    <input type="text" value="{user_id}" readonly style="width:100%;padding:8px;font-size:14px;" onclick="this.select()">
+    <p><strong>THREADS_ACCESS_TOKEN:</strong></p>
+    <textarea rows="4" readonly style="width:100%;padding:8px;font-size:12px;" onclick="this.select();">{long_token}</textarea>
+    <p style="color:red;">⚠️ このページを閉じる前に必ず保存してください。</p>
+    </body></html>'''
+
 @app.route('/api/auto-thread/status')
 def api_auto_thread_status():
     idx, book = _get_today_book()
@@ -361,6 +411,20 @@ def api_auto_thread_run():
         'total': post_result.get('total', 0),
         'thread_url': post_result.get('thread_url', '')
     })
+
+@app.route('/api/auto-threads/run')
+def api_auto_threads_run():
+    secret = request.args.get('secret', '')
+    if secret != THREAD_CRON_SECRET:
+        return jsonify({'error': '認証エラー'}), 403
+    idx, book = _get_today_book()
+    amazon_url = f"https://www.amazon.co.jp/dp/{book['asin']}"
+    thread_result = generate_thread(book['title'], amazon_url)
+    if not thread_result.get('tweets'):
+        return jsonify({'success': False, 'error': 'スレッド生成失敗'})
+    post_text = '\n\n'.join(thread_result['tweets'][:2])[:500]
+    result = post_to_threads(post_text)
+    return jsonify({'success': result.get('success'), 'book': book['title'], 'error': result.get('error', '')})
 
 @app.route('/api/thread/books')
 def api_thread_books():
