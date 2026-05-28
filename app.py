@@ -465,5 +465,17 @@ def manual_free():
 def manual_paid():
     return render_template('manual_paid.html')
 
+def _keep_alive():
+    self_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://bep-post-generator.onrender.com')
+    while True:
+        time.sleep(600)
+        try:
+            requests.get(f"{self_url}/api/auto-thread/status", timeout=10)
+        except Exception:
+            pass
+
+_keep_alive_thread = threading.Thread(target=_keep_alive, daemon=True)
+_keep_alive_thread.start()
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
