@@ -477,5 +477,23 @@ def _keep_alive():
 _keep_alive_thread = threading.Thread(target=_keep_alive, daemon=True)
 _keep_alive_thread.start()
 
+def _daily_auto_post():
+    from datetime import timedelta
+    self_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://bep-post-generator.onrender.com')
+    jst = pytz.timezone('Asia/Tokyo')
+    while True:
+        now = datetime.now(jst)
+        target = now.replace(hour=7, minute=0, second=0, microsecond=0)
+        if now >= target:
+            target += timedelta(days=1)
+        time.sleep((target - now).total_seconds())
+        try:
+            requests.get(f"{self_url}/api/auto-thread/run?secret={THREAD_CRON_SECRET}", timeout=60)
+        except Exception:
+            pass
+
+_daily_post_thread = threading.Thread(target=_daily_auto_post, daemon=True)
+_daily_post_thread.start()
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
