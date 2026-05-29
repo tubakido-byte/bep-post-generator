@@ -396,6 +396,59 @@ def generate_thread(book_title: str, amazon_url: str) -> dict:
     return {"tweets": tweets}
 
 
+_POST_TYPE_PROMPTS = [
+    # 0: 問いかけ型
+    "読者に問いかけるフック型のXポストを1件生成してください。「あなたは今、{situation}で損していませんか？」のような書き出しで始め、最後にAmazonリンク({url})を含めてください。140文字以内・絵文字あり・テンプレで自分解決がキーメッセージ。書籍タイトル：{title}",
+    # 1: 損失回避型
+    "「知らないと○万円損する」という損失回避型のXポストを1件生成してください。具体的な金額や損失感を示し、最後にAmazonリンク({url})を含めてください。140文字以内・絵文字あり。書籍タイトル：{title}",
+    # 2: 数字訴求型
+    "具体的な数字（費用・日数・件数など）を使って訴求するXポストを1件生成してください。「弁護士費用30万円→0円」のような対比を使い、最後にAmazonリンク({url})を含めてください。140文字以内・絵文字あり。書籍タイトル：{title}",
+    # 3: 比較型
+    "「弁護士に頼む場合 vs 自分でできる場合」を対比したXポストを1件生成してください。自分でできる方が圧倒的にお得という構成にし、最後にAmazonリンク({url})を含めてください。140文字以内・絵文字あり。書籍タイトル：{title}",
+    # 4: ストーリー型
+    "実際にあったようなリアルな事例をストーリー形式で紹介するXポストを1件生成してください。「先日こんな相談がありました…」という書き出しで始め、最後にAmazonリンク({url})を含めてください。140文字以内・絵文字あり。書籍タイトル：{title}",
+    # 5: リスト型
+    "「この本でできること3選」または「知らないと怖い3つの事実」形式のリスト型Xポストを1件生成してください。箇条書きで簡潔に、最後にAmazonリンク({url})を含めてください。140文字以内・絵文字あり。書籍タイトル：{title}",
+    # 6: 緊急型
+    "「今すぐ確認してください」「明日では遅い」という緊急性を煽るXポストを1件生成してください。読者に即行動を促し、最後にAmazonリンク({url})を含めてください。140文字以内・絵文字あり。書籍タイトル：{title}",
+    # 7: 豆知識型
+    "法律の豆知識・意外な事実を教える教育型Xポストを1件生成してください。「実は法律では〇〇と定められています」のような書き出しで始め、最後にAmazonリンク({url})を含めてください。140文字以内・絵文字あり。書籍タイトル：{title}",
+    # 8: 共感型
+    "読者が「あるある」と共感するXポストを1件生成してください。「〇〇って本当に理不尽ですよね」のような共感の書き出しで始め、最後にAmazonリンク({url})を含めてください。140文字以内・絵文字あり。書籍タイトル：{title}",
+    # 9: CTA型
+    "「今すぐKindle Unlimitedで無料で読める」という強いCTA（行動喚起）型Xポストを1件生成してください。Kindle Unlimitedの価値を強調し、最後にAmazonリンク({url})を含めてください。140文字以内・絵文字あり。書籍タイトル：{title}",
+]
+
+
+def generate_single_post(book_title: str, asin: str, type_idx: int) -> str:
+    amazon_url = f"https://www.amazon.co.jp/dp/{asin}"
+    situation_map = {
+        "残業代": "残業代未払い",
+        "敷金": "賃貸退去",
+        "解雇": "不当解雇・パワハラ",
+        "離婚": "離婚協議",
+        "遺言": "相続トラブル",
+        "騒音": "近隣トラブル",
+        "交通事故": "交通事故示談",
+        "示談書": "示談・合意書作成",
+        "詐欺": "悪質商法・詐欺被害",
+        "SNS": "SNS誹謗中傷",
+        "内容証明": "内容証明作成",
+        "民事訴訟": "民事訴訟",
+    }
+    situation = next((v for k, v in situation_map.items() if k in book_title), "法的トラブル")
+    prompt_template = _POST_TYPE_PROMPTS[type_idx % len(_POST_TYPE_PROMPTS)]
+    prompt = prompt_template.replace("{title}", book_title).replace("{url}", amazon_url).replace("{situation}", situation)
+    prompt += "\n\n【重要】出力はXポスト本文のみ。説明・前置き・コメント一切不要。"
+    result = _call_gemini(prompt)
+    if not result:
+        return f"📚 {book_title}\n\n弁護士費用ゼロで自分解決！\nKindle Unlimitedで今すぐ読める✅\n{amazon_url}"
+    text = result.strip()
+    if amazon_url not in text:
+        text = text[:200] + f"\n{amazon_url}"
+    return text[:280]
+
+
 def post_thread_to_x(tweets: list, credentials: dict = None) -> dict:
     ck = X_CONSUMER_KEY
     cs = X_CONSUMER_SECRET

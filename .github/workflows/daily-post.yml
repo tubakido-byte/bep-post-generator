@@ -1,0 +1,43 @@
+name: Daily X Auto Post
+
+on:
+  schedule:
+    - cron: '0 23 * * *'   # 毎日 08:00 JST (slot=0)
+    - cron: '0 3 * * *'    # 毎日 12:00 JST (slot=1)
+    - cron: '0 12 * * *'   # 毎日 21:00 JST (slot=2)
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: 'slot番号 (0=8時, 1=12時, 2=21時)'
+        required: false
+        default: '0'
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake Render
+        run: |
+          curl -sf "https://bep-post-generator.onrender.com/api/daily-post/status?secret=kanou-thread-auto-7am" || true
+
+      - name: Wait for Render boot
+        run: sleep 40
+
+      - name: Determine slot
+        id: slot
+        run: |
+          HOUR=$(TZ='Asia/Tokyo' date +%-H)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SLOT="${{ github.event.inputs.slot }}"
+          elif [ "$HOUR" -ge 20 ]; then
+            SLOT=2
+          elif [ "$HOUR" -ge 11 ]; then
+            SLOT=1
+          else
+            SLOT=0
+          fi
+          echo "slot=$SLOT" >> $GITHUB_OUTPUT
+
+      - name: Post to X
+        run: |
+          curl -sf "https://bep-post-generator.onrender.com/api/daily-post/run?secret=kanou-thread-auto-7am&slot=${{ steps.slot.outputs.slot }}"

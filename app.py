@@ -3,13 +3,18 @@ import os, requests, uuid, threading, hmac, hashlib, base64, time, sqlite3
 from datetime import datetime, date as _date_cls
 import pytz
 from requests_oauthlib import OAuth1
-from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles, health_check, surge_long_post, surge_buzz, surge_self_quote, surge_inspo, surge_profile_check, generate_thread, post_thread_to_x, post_to_threads, STUDIO_KANOU_BOOKS
+from api_handlers import post_to_x, generate_posts, generate_images, get_news_articles, health_check, surge_long_post, surge_buzz, surge_self_quote, surge_inspo, surge_profile_check, generate_thread, post_thread_to_x, post_to_threads, STUDIO_KANOU_BOOKS, generate_single_post
 from config import GEMINI_API_KEY
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'xpost-secret-2024')
 THREAD_CRON_SECRET = os.environ.get('THREAD_CRON_SECRET', 'kanou-thread-auto-7am')
 _THREAD_EPOCH = _date_cls(2026, 5, 28)
+_POST_EPOCH = _date_cls(2026, 5, 29)
+_POST_TYPES_COUNT = 10
+_BOOKS_COUNT = 12
+_TOTAL_SLOTS = _POST_TYPES_COUNT * _BOOKS_COUNT  # 120
+_DAILY_SLOTS = 3  # 8時・12時・21時
 THREADS_APP_ID = os.environ.get('THREADS_APP_ID', '2386770295177388')
 THREADS_APP_SECRET = os.environ.get('THREADS_APP_SECRET', '')
 THREADS_REDIRECT_URI = os.environ.get('THREADS_REDIRECT_URI', 'https://bep-post-generator.onrender.com/threads/callback')
@@ -414,6 +419,53 @@ def api_auto_thread_run():
         'total': post_result.get('total', 0),
         'thread_url': post_result.get('thread_url', '')
     })
+
+@app.route('/api/daily-post/run')
+def api_daily_post_run():
+    secret = request.args.get('secret', '')
+    if secret != THREAD_CRON_SECRET:
+        return jsonify({'error': '認証エラー'}), 403
+    try:
+        slot_of_day = int(request.args.get('slot', 0))
+    except (ValueError, TypeError):
+        slot_of_day = 0
+    jst = pytz.timezone('Asia/Tokyo')
+    today = datetime.now(jst).date()
+    days_elapsed = max(0, (today - _POST_EPOCH).days)
+    total_slot = (days_elapsed * _DAILY_SLOTS + slot_of_day) % _TOTAL_SLOTS
+    book_idx = total_slot % _BOOKS_COUNT
+    type_idx = total_slot // _BOOKS_COUNT
+    book = STUDIO_KANOU_BOOKS[book_idx]
+    text = generate_single_post(book['title'], book['asin'], type_idx)
+    result = post_to_x(text)
+    return jsonify({
+        'success': result.get('success', False),
+        'book': book['title'],
+        'book_index': book_idx,
+        'post_type': type_idx,
+        'slot': total_slot,
+        'error': result.get('error', '')
+    })
+
+
+@app.route('/api/daily-post/status')
+def api_daily_post_status():
+    jst = pytz.timezone('Asia/Tokyo')
+    today = datetime.now(jst).date()
+    days_elapsed = max(0, (today - _POST_EPOCH).days)
+    schedule = []
+    for slot_of_day, label in enumerate(['08:00', '12:00', '21:00']):
+        total_slot = (days_elapsed * _DAILY_SLOTS + slot_of_day) % _TOTAL_SLOTS
+        book_idx = total_slot % _BOOKS_COUNT
+        type_idx = total_slot // _BOOKS_COUNT
+        schedule.append({
+            'time': label,
+            'book': STUDIO_KANOU_BOOKS[book_idx]['title'],
+            'type_index': type_idx,
+            'slot': total_slot
+        })
+    return jsonify({'today': str(today), 'schedule': schedule})
+
 
 @app.route('/api/auto-threads/run')
 def api_auto_threads_run():
