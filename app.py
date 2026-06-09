@@ -544,8 +544,8 @@ def _daily_auto_post():
         except Exception:
             pass
 
-_daily_post_thread = threading.Thread(target=_daily_auto_post, daemon=True)
-_daily_post_thread.start()
+# _daily_post_thread = threading.Thread(target=_daily_auto_post, daemon=True)
+# _daily_post_thread.start()  # 無効化: cron-job.org経由のdaily-postと重複するため
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
