@@ -1,0 +1,50 @@
+name: Mimamori X Auto Post
+
+on:
+  schedule:
+    - cron: '0 23 * * *'   # 毎日 08:00 JST
+    - cron: '0 3 * * *'    # 毎日 12:00 JST
+    - cron: '0 12 * * *'   # 毎日 21:00 JST
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: 'slot番号 (0=8時, 1=12時, 2=21時)'
+        required: false
+        default: '0'
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install tweepy pytz
+
+      - name: Determine slot
+        id: slot
+        run: |
+          HOUR=$(TZ='Asia/Tokyo' date +%-H)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SLOT="${{ github.event.inputs.slot }}"
+          elif [ "$HOUR" -ge 20 ]; then
+            SLOT=2
+          elif [ "$HOUR" -ge 11 ]; then
+            SLOT=1
+          else
+            SLOT=0
+          fi
+          echo "slot=$SLOT" >> $GITHUB_OUTPUT
+
+      - name: Post to X
+        env:
+          MIMA_CONSUMER_KEY: ${{ secrets.MIMA_CONSUMER_KEY }}
+          MIMA_CONSUMER_SECRET: ${{ secrets.MIMA_CONSUMER_SECRET }}
+          MIMA_ACCESS_TOKEN: ${{ secrets.MIMA_ACCESS_TOKEN }}
+          MIMA_ACCESS_TOKEN_SECRET: ${{ secrets.MIMA_ACCESS_TOKEN_SECRET }}
+        run: python post_mimamori.py ${{ steps.slot.outputs.slot }}
